@@ -10,8 +10,16 @@ type Order = {
   status: string;
   amount: string;
   user: { nickname: string; openid: string };
-  worker?: { id: string };
+  worker?: { id: string; userId?: string };
   createdAt: string;
+};
+
+type OrderDetail = Order & {
+  address: string;
+  review?: { rating: number; content: string | null };
+  afterSale?: { status: string; reason: string; result: string | null };
+  appeals?: { id: string; status: string; reason: string; result: string | null }[];
+  updatedAt?: string;
 };
 
 const STATUS_OPTIONS = [
@@ -34,6 +42,9 @@ export default function AdminOrdersPage() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [detail, setDetail] = useState<OrderDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState("");
 
   useEffect(() => {
     load();
@@ -51,6 +62,34 @@ export default function AdminOrdersPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const openDetail = async (id: string) => {
+    setDetail({
+      id,
+      type: "",
+      description: "",
+      status: "",
+      amount: "",
+      address: "",
+      user: { nickname: "", openid: "" },
+      createdAt: "",
+    });
+    setDetailLoading(true);
+    setDetailError("");
+    try {
+      const data = await adminFetch<OrderDetail>(`/api/admin/orders/${id}`);
+      setDetail(data);
+    } catch (e: any) {
+      setDetailError(e?.message || "加载失败");
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const closeDetail = () => {
+    setDetail(null);
+    setDetailError("");
   };
 
   const filtered = (list || []).filter((o) => {
@@ -123,9 +162,12 @@ export default function AdminOrdersPage() {
                 <td className="px-4 py-3 capitalize">{o.status}</td>
                 <td className="px-4 py-3 text-xs text-slate-500">{o.createdAt}</td>
                 <td className="px-4 py-3 text-right">
-                  <a className="text-sm text-slate-600 hover:text-slate-900" href={`/admin/orders/${o.id}`}>
+                  <button
+                    className="text-sm text-slate-600 hover:text-slate-900"
+                    onClick={() => openDetail(o.id)}
+                  >
                     查看
-                  </a>
+                  </button>
                 </td>
               </tr>
             ))}
@@ -155,6 +197,75 @@ export default function AdminOrdersPage() {
           下一页
         </button>
       </div>
+
+      {detail ? (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-3xl rounded-xl bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900">订单详情</h3>
+                <p className="text-xs text-slate-500">订单ID：{detail.id}</p>
+              </div>
+              <button className="text-slate-500 hover:text-slate-900" onClick={closeDetail}>
+                关闭
+              </button>
+            </div>
+
+            <div className="max-h-[70vh] overflow-y-auto px-5 py-4 space-y-3 text-sm text-slate-700">
+              {detailError ? <p className="text-red-600">{detailError}</p> : null}
+              {detailLoading ? <p className="text-slate-500">加载中...</p> : null}
+              <DetailRow label="类型" value={detail.type} />
+              <DetailRow label="描述" value={detail.description} />
+              <DetailRow label="金额" value={`¥${detail.amount}`} />
+              <DetailRow label="状态" value={detail.status} />
+              <DetailRow label="地址" value={detail.address} />
+              <DetailRow label="用户" value={detail.user?.nickname || detail.user?.openid} />
+              <DetailRow label="接单人" value={detail.worker?.id || "-"} />
+              <DetailRow label="创建时间" value={detail.createdAt} />
+              <DetailRow label="更新时间" value={detail.updatedAt || "-"} />
+
+              {detail.review ? (
+                <div className="rounded-lg border border-slate-100 bg-slate-50 px-4 py-3">
+                  <p className="font-medium text-slate-900">评价</p>
+                  <p className="text-slate-700 mt-1">评分：{detail.review.rating}</p>
+                  <p className="text-slate-700">内容：{detail.review.content || "-"}</p>
+                </div>
+              ) : null}
+
+              {detail.afterSale ? (
+                <div className="rounded-lg border border-slate-100 bg-slate-50 px-4 py-3">
+                  <p className="font-medium text-slate-900">售后</p>
+                  <p className="text-slate-700 mt-1">状态：{detail.afterSale.status}</p>
+                  <p className="text-slate-700">原因：{detail.afterSale.reason}</p>
+                  <p className="text-slate-700">结果：{detail.afterSale.result || "-"}</p>
+                </div>
+              ) : null}
+
+              {detail.appeals && detail.appeals.length > 0 ? (
+                <div className="rounded-lg border border-slate-100 bg-slate-50 px-4 py-3 space-y-2">
+                  <p className="font-medium text-slate-900">申诉</p>
+                  {detail.appeals.map((a) => (
+                    <div key={a.id} className="rounded border border-slate-200 px-3 py-2">
+                      <p>状态：{a.status}</p>
+                      <p>原因：{a.reason}</p>
+                      <p>结果：{a.result || "-"}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: string | number | undefined | null }) {
+  return (
+    <div className="flex text-sm text-slate-700">
+      <div className="w-24 text-slate-500">{label}</div>
+      <div className="flex-1 text-slate-900">{value ?? "-"}</div>
     </div>
   );
 }
