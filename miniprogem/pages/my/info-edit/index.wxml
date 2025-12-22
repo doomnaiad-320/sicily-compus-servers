@@ -1,0 +1,51 @@
+<t-navbar left-arrow title="兼职者申请" />
+<view class="apply">
+  <t-cell-group theme="card">
+    <t-cell title="身份证(PNG)">
+      <view slot="description" class="picker" bindtap="onUpload">
+        <text>{{form.idCardImage ? '已上传' : '上传身份证(PNG)'}}</text>
+        <t-icon name="upload" />
+      </view>
+    </t-cell>
+    <t-cell title="手机号">
+      <t-input
+        slot="description"
+        placeholder="请输入手机号"
+        value="{{form.phone}}"
+        bind:change="onInput"
+        data-field="phone"
+        type="number"
+      />
+    </t-cell>
+    <t-cell title="验证码">
+      <t-input slot="description" placeholder="1111" value="{{form.code}}" bind:change="onInput" data-field="code" />
+    </t-cell>
+    <t-cell title="技能">
+      <t-input
+        slot="description"
+        placeholder="如 跑腿/搬运/代购"
+        value="{{form.skills}}"
+        bind:change="onInput"
+        data-field="skills"
+      />
+    </t-cell>
+    <t-cell title="支付宝账号">
+      <t-input
+        slot="description"
+        placeholder="提现账号"
+        value="{{form.alipayAccount}}"
+        bind:change="onInput"
+        data-field="alipayAccount"
+      />
+    </t-cell>
+  </t-cell-group>
+
+  <view class="status" wx:if="{{status}}">
+    <view>当前状态：{{status}}</view>
+    <view wx:if="{{statusReason}}">原因：{{statusReason}}</view>
+  </view>
+
+  <view class="actions">
+    <t-button block theme="primary" loading="{{saving}}" bindtap="onSubmit">提 交</t-button>
+  </view>
+</view>

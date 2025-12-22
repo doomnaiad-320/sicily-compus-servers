@@ -1,0 +1,39 @@
+<t-navbar left-arrow title="订单列表" />
+<view class="orders">
+  <view wx:if="{{role === 'worker'}}" class="view-tabs">
+    <t-tabs defaultValue="{{view}}" bindchange="onViewChange" size="small">
+      <t-tab-panel label="我的接单" value="mine"></t-tab-panel>
+      <t-tab-panel label="可接单" value="available"></t-tab-panel>
+    </t-tabs>
+  </view>
+
+  <t-tabs defaultValue="{{current}}" bindchange="onTabChange">
+    <block wx:for="{{STATUS_TABS}}" wx:key="value">
+      <t-tab-panel label="{{item.label}}" value="{{item.value}}"></t-tab-panel>
+    </block>
+  </t-tabs>
+
+  <view class="sort-actions">
+    <t-button size="small" variant="outline" bindtap="sortByTimeDesc">按时间倒序</t-button>
+    <t-button size="small" variant="outline" bindtap="sortByTimeAsc">按时间正序</t-button>
+  </view>
+
+  <t-cell-group>
+    <t-cell
+      wx:for="{{filteredList()}}"
+      wx:key="id"
+      title="{{item.type}} · ¥{{item.amount}}"
+      description="{{item.description}}"
+      note=""
+      hover
+      data-id="{{item.id}}"
+      bindtap="goDetail"
+    >
+      <t-tag slot="note" size="small" theme="{{item.statusTag.theme}}" variant="light">{{item.statusTag.text}}</t-tag>
+      <view slot="description" class="desc">
+        <text class="line">{{item.description}}</text>
+        <text class="time">{{item.createdAt}}</text>
+      </view>
+    </t-cell>
+  </t-cell-group>
+</view>

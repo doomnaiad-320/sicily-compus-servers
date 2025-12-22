@@ -1,0 +1,270 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum RoleView {
+  user
+  worker
+}
+
+enum WorkerStatus {
+  none
+  pending
+  approved
+  rejected
+}
+
+enum OrderStatus {
+  unpaid
+  consulting
+  pending
+  in_progress
+  waiting_confirm
+  completed
+  aftersale
+  appealing
+}
+
+enum MessageType {
+  text
+  action
+}
+
+enum ActionType {
+  request_ready
+  request_take
+  mark_service_done
+  request_confirm
+  request_aftersale
+  request_appeal
+}
+
+enum WithdrawalStatus {
+  pending
+  approved
+  rejected
+  paid
+}
+
+enum AfterSaleStatus {
+  pending
+  resolved
+}
+
+enum AppealStatus {
+  pending
+  resolved
+}
+
+enum AdminAuditType {
+  worker
+  order
+  withdrawal
+  appeal
+  review
+  user
+}
+
+enum AdminAuditAction {
+  approve
+  reject
+  disable
+  comment
+}
+
+model User {
+  id          String        @id @default(cuid())
+  openid      String        @unique
+  nickname    String
+  avatar      String?
+  phone       String?
+  currentRole RoleView      @default(user)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  worker      Worker?
+  addresses   Address[]
+  orders      Order[]       @relation("UserOrders")
+  messagesSent     Message[] @relation("MessagesSent")
+  messagesReceived Message[] @relation("MessagesReceived")
+  appeals     Appeal[]
+  reviews     Review[]
+  conversations Conversation[] @relation("UserConversation")
+}
+
+model Worker {
+  id             String       @id @default(cuid())
+  userId         String       @unique
+  user           User         @relation(fields: [userId], references: [id])
+  idCardImage    String?
+  skills         String?
+  status         WorkerStatus @default(none)
+  statusReason   String?
+  alipayAccount  String?
+  balance        Decimal      @default(0)
+  isAccepting    Boolean      @default(false)
+  phoneVerified  Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  stats        WorkerStats?
+  orders       Order[]         @relation("WorkerOrders")
+  withdrawals  Withdrawal[]
+  conversations Conversation[] @relation("WorkerConversation")
+}
+
+model WorkerStats {
+  id               String  @id @default(cuid())
+  workerId         String  @unique
+  worker           Worker  @relation(fields: [workerId], references: [id])
+  acceptedCount    Int     @default(0)
+  completedCount   Int     @default(0)
+  positiveCount    Int     @default(0)
+  negativeCount    Int     @default(0)
+  totalWorkMinutes Int     @default(0)
+  totalIncome      Decimal @default(0)
+}
+
+model Address {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  detail    String
+  label     String?
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Order {
+  id                 String       @id @default(cuid())
+  userId             String
+  user               User         @relation("UserOrders", fields: [userId], references: [id])
+  workerId           String?
+  worker             Worker?      @relation("WorkerOrders", fields: [workerId], references: [id])
+  type               String
+  description        String
+  amount             Decimal
+  status             OrderStatus  @default(unpaid)
+  address            String
+  paidAt             DateTime?
+  readyAt            DateTime?
+  takenAt            DateTime?
+  serviceCompletedAt DateTime?
+  confirmedAt        DateTime?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  messages     Message[]
+  review       Review?
+  afterSale    AfterSale?
+  appeals      Appeal[]       @relation("OrderAppeals")
+  conversation Conversation?  @relation("OrderConversation")
+
+  @@index([status])
+  @@index([userId])
+  @@index([workerId])
+}
+
+model Conversation {
+  id        String   @id @default(cuid())
+  orderId   String?  @unique
+  order     Order?   @relation("OrderConversation", fields: [orderId], references: [id])
+  userId    String
+  workerId  String
+  user      User     @relation("UserConversation", fields: [userId], references: [id])
+  worker    Worker   @relation("WorkerConversation", fields: [workerId], references: [id])
+  messages  Message[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, workerId])
+}
+
+model Message {
+  id           String      @id @default(cuid())
+  conversationId String
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+  senderId     String
+  sender       User        @relation("MessagesSent", fields: [senderId], references: [id])
+  receiverId   String
+  receiver     User        @relation("MessagesReceived", fields: [receiverId], references: [id])
+  orderId      String?
+  order        Order?      @relation(fields: [orderId], references: [id])
+  content      String
+  messageType  MessageType @default(text)
+  actionType   ActionType?
+  createdAt    DateTime    @default(now())
+
+  @@index([conversationId])
+  @@index([orderId])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  orderId   String   @unique
+  order     Order    @relation(fields: [orderId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  rating    Int
+  content   String?
+  isPositive Boolean
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Withdrawal {
+  id            String            @id @default(cuid())
+  workerId      String
+  worker        Worker            @relation(fields: [workerId], references: [id])
+  amount        Decimal
+  status        WithdrawalStatus  @default(pending)
+  alipayAccount String
+  processedAt   DateTime?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@index([status])
+}
+
+model AfterSale {
+  id        String          @id @default(cuid())
+  orderId   String          @unique
+  order     Order           @relation(fields: [orderId], references: [id])
+  reason    String
+  status    AfterSaleStatus @default(pending)
+  result    String?
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+}
+
+model Appeal {
+  id        String        @id @default(cuid())
+  orderId   String
+  order     Order         @relation("OrderAppeals", fields: [orderId], references: [id])
+  userId    String
+  user      User          @relation(fields: [userId], references: [id])
+  reason    String
+  status    AppealStatus  @default(pending)
+  result    String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([orderId])
+  @@index([userId])
+}
+
+model AdminAudit {
+  id        String           @id @default(cuid())
+  type      AdminAuditType
+  targetId  String
+  action    AdminAuditAction
+  reason    String?
+  auditedAt DateTime         @default(now())
+}

@@ -1,0 +1,16 @@
+<nav nav-type="title" title-text="{{id ? '编辑地址' : '新增地址'}}"></nav>
+<t-cell-group>
+  <t-cell title="地址详情">
+    <t-input value="{{form.detail}}" placeholder="请输入详细地址" bindchange="onDetailChange" />
+  </t-cell>
+  <t-cell title="标签">
+    <t-input value="{{form.label}}" placeholder="如 家/学校" bindchange="onLabelChange" />
+  </t-cell>
+  <t-cell title="设为默认">
+    <t-switch slot="right-icon" checked="{{form.isDefault}}" bindchange="onDefaultChange" />
+  </t-cell>
+</t-cell-group>
+
+<view class="footer">
+  <t-button block theme="primary" loading="{{loading}}" bindtap="onSubmit">保存</t-button>
+</view>

@@ -1,0 +1,52 @@
+<t-toast id="t-toast" />
+
+<view class="my">
+  <image class="nav-bg" src="/static/bg_navbar.png" />
+  <nav title-text="我的" />
+  <view class="my-info">
+    <t-cell-group>
+      <t-cell wx:if="{{isLoad}}" bordered="{{false}}">
+        <t-avatar icon="user" slot="left-icon" size="large" />
+        <view class="my-info__person" slot="description">
+          <view class="name">{{personalInfo.nickname || '用户'}}</view>
+          <view class="tags">
+            <t-tag class="tag" variant="light">{{personalInfo.currentRole === 'worker' ? '兼职者' : '用户'}}</t-tag>
+          </view>
+        </view>
+        <t-button
+          size="small"
+          variant="outline"
+          theme="primary"
+          loading="{{roleSwitching}}"
+          bindtap="onSwitchRole"
+          slot="right-icon"
+        >
+          切换
+        </t-button>
+      </t-cell>
+      <t-cell
+        wx:if="{{!isLoad}}"
+        title="请先登录/注册"
+        bordered="{{false}}"
+        t-class-title="cell-class-title"
+        t-class-center="cell-class-center"
+        bindtap="onLogin"
+      >
+        <t-avatar slot="left-icon" icon="user" size="128rpx" />
+      </t-cell>
+    </t-cell-group>
+    <t-divider t-class="divider-class" />
+    <t-grid t-class="grid-class">
+      <t-grid-item
+        wx:for="{{gridList}}"
+        wx:for-item="gridItem"
+        wx:key="type"
+        text="{{gridItem.name}}"
+        icon="{{gridItem.icon}}"
+        class="grid-item {{gridItem.type === 'all' ? 'split-line' : ''}}"
+        data-data="{{gridItem}}"
+        bindclick="onEleClick"
+      />
+    </t-grid>
+  </view>
+</view>

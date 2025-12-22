@@ -1,0 +1,8 @@
+{
+  "usingComponents": {
+    "t-navbar": "tdesign-miniprogram/navbar/navbar",
+    "t-rate": "tdesign-miniprogram/rate/rate",
+    "t-textarea": "tdesign-miniprogram/textarea/textarea",
+    "t-button": "tdesign-miniprogram/button/button"
+  }
+}

@@ -1,0 +1,27 @@
+<t-navbar title="提现" left-arrow />
+<view class="withdrawal">
+  <t-cell-group>
+    <t-cell title="余额" note="¥{{balance}}" />
+    <t-cell title="支付宝">
+      <t-input slot="description" value="{{alipayAccount}}" placeholder="请输入支付宝账号" bind:change="onAlipayChange" />
+    </t-cell>
+    <t-cell title="提现金额">
+      <t-input slot="description" value="{{amount}}" type="number" placeholder="请输入金额" bind:change="onInput" />
+    </t-cell>
+  </t-cell-group>
+  <view class="actions">
+    <t-button block theme="primary" loading="{{loading}}" bindtap="onSubmit">提交提现</t-button>
+  </view>
+
+  <view class="list" wx:if="{{list.length}}">
+    <t-cell-group title="提现记录">
+      <t-cell
+        wx:for="{{list}}"
+        wx:key="id"
+        title="¥{{item.amount}}"
+        description="{{item.status}}"
+        note="{{item.alipayAccount}}"
+      />
+    </t-cell-group>
+  </view>
+</view>

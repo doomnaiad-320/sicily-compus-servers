@@ -1,0 +1,16 @@
+<t-navbar title="评价" left-arrow />
+<view class="review">
+  <view class="rating">
+    <t-rate value="{{rating}}" bind:change="onRateChange" />
+  </view>
+  <t-textarea
+    placeholder="写点服务评价吧"
+    value="{{content}}"
+    bind:change="onContentChange"
+    maxlength="200"
+    indicator
+  />
+  <view class="actions">
+    <t-button block theme="primary" loading="{{loading}}" bindtap="onSubmit">提交评价</t-button>
+  </view>
+</view>

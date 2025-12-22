@@ -1,0 +1,26 @@
+<nav nav-type="title" title-text="消息"></nav>
+<scroll-view
+  class="message-list"
+  scroll-y
+  refresher-enabled
+  refresher-triggered="{{ loading }}"
+  bindrefresherrefresh="getMessageList"
+>
+  <block wx:if="{{messageList.length}}">
+    <t-cell
+      wx:for="{{ messageList }}"
+      wx:key="conversationId"
+      title="{{ item.title }}"
+      description="{{ item.lastContent }}"
+      hover
+      note="{{ item.orderStatus || '' }}"
+      bind:tap="toChat"
+      data-conversation-id="{{ item.conversationId }}"
+      data-order-id="{{ item.orderId }}"
+    >
+      <view slot="image" class="avatar">💬</view>
+      <t-badge slot="right-icon" count="{{item.badge || 0}}" />
+    </t-cell>
+  </block>
+  <view wx:else class="empty">暂无会话</view>
+</scroll-view>

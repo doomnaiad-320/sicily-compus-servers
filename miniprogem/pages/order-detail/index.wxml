@@ -1,0 +1,28 @@
+<view class="order-detail">
+  <view wx:if="{{order}}">
+    <t-cell title="订单类型" note="{{order.type}}" />
+    <t-cell title="金额" note="¥{{order.amount}}" />
+    <t-cell title="状态" note="{{order.status}}" />
+    <t-cell title="地址" note="{{order.address}}" />
+    <t-cell title="描述" note="{{order.description}}" />
+    <t-cell title="创建时间" note="{{order.createdAt}}" />
+    <t-cell wx:if="{{order.worker}}" title="接单人" note="{{order.worker.userId || order.worker.id}}" />
+  </view>
+  <view wx:else class="empty">加载中或订单不存在</view>
+
+  <view class="actions">
+    <t-button
+      wx:for="{{actions}}"
+      wx:key="key"
+      block
+      theme="{{item.theme}}"
+      class="action-btn"
+      data-key="{{item.key}}"
+      loading="{{submitting}}"
+      bindtap="onActionTap"
+    >
+      {{item.text}}
+    </t-button>
+    <t-button block variant="outline" theme="default" bindtap="goChat">进入聊天</t-button>
+  </view>
+</view>

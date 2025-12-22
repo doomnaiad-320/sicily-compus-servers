@@ -1,0 +1,21 @@
+<nav nav-type="title" title-text="地址管理"></nav>
+<t-cell-group>
+  <t-swipe-cell wx:for="{{list}}" wx:key="id">
+    <t-cell
+      title="{{item.label || '地址'}}"
+      description="{{item.detail}}"
+      note="{{item.isDefault ? '默认' : ''}}"
+      hover
+      bindtap="onEdit"
+      data-id="{{item.id}}"
+    />
+    <view slot="right">
+      <t-button theme="default" size="small" data-id="{{item.id}}" bindtap="onSetDefault">设默认</t-button>
+      <t-button theme="danger" size="small" data-id="{{item.id}}" bindtap="onDelete">删除</t-button>
+    </view>
+  </t-swipe-cell>
+</t-cell-group>
+
+<view class="footer">
+  <t-button theme="primary" block bindtap="onAdd">新增地址</t-button>
+</view>
