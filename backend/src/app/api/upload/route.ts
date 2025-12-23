@@ -31,14 +31,19 @@ export async function POST(req: NextRequest) {
   await fs.writeFile(filepath, buffer);
 
   const url = `/uploads/${filename}`;
+  const origin =
+    req.headers.get("origin") ??
+    `${req.nextUrl.protocol}//${req.headers.get("host") ?? req.nextUrl.host}`;
+  const absoluteUrl = `${origin}${url}`;
 
   return NextResponse.json(
     {
       filename,
       url,
+      absoluteUrl,
       size: file.size,
       type: file.type,
     },
-    { status: 201 }
+    { status: 201 },
   );
 }

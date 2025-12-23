@@ -20,6 +20,25 @@ async function code2Session(code: string): Promise<WxSession> {
   return data as WxSession;
 }
 
+// 生成短ID格式的用户ID (U001, U002, ...)
+async function generateUserId(): Promise<string> {
+  const lastUser = await prisma.user.findFirst({
+    where: {
+      id: { startsWith: "U" },
+    },
+    orderBy: { id: "desc" },
+    select: { id: true },
+  });
+
+  let seq = 1;
+  if (lastUser?.id) {
+    const lastSeq = parseInt(lastUser.id.slice(1), 10);
+    if (!isNaN(lastSeq)) seq = lastSeq + 1;
+  }
+
+  return `U${seq.toString().padStart(3, "0")}`;
+}
+
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const { code, openid: directOpenid, nickname, avatar } = body as {
@@ -60,21 +79,35 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: "缺少登录凭证" }, { status: 400 });
   }
 
-  const user = await prisma.user.upsert({
+  // 先查找是否已存在用户
+  let user = await prisma.user.findUnique({
     where: { openid },
-    update: {
-      ...(nickname ? { nickname } : {}),
-      ...(avatar ? { avatar } : {}),
-    },
-    create: {
-      openid,
-      nickname: nickname || "微信用户",
-      avatar: avatar || null,
-    },
-    include: {
-      worker: true,
-    },
+    include: { worker: true },
   });
+
+  if (user) {
+    // 已存在用户，更新信息
+    user = await prisma.user.update({
+      where: { openid },
+      data: {
+        ...(nickname ? { nickname } : {}),
+        ...(avatar ? { avatar } : {}),
+      },
+      include: { worker: true },
+    });
+  } else {
+    // 新用户，生成短ID
+    const userId = await generateUserId();
+    user = await prisma.user.create({
+      data: {
+        id: userId,
+        openid,
+        nickname: nickname || "微信用户",
+        avatar: avatar || null,
+      },
+      include: { worker: true },
+    });
+  }
 
   const token = await signUserToken({
     userId: user.id,

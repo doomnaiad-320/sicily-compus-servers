@@ -8,8 +8,6 @@ const STATUS_TABS = [
   { label: '待确认', value: 'waiting_confirm' },
   { label: '已完成', value: 'completed' },
   { label: '已取消', value: 'cancelled' },
-  { label: '售后中', value: 'aftersale' },
-  { label: '申诉中', value: 'appealing' },
 ];
 
 Page({
@@ -18,8 +16,10 @@ Page({
     current: 'all',
     list: [],
     available: [],
+    displayList: [], // 用于展示的筛选后列表
     view: 'mine', // mine | available (worker only)
     loading: true,
+    statusTabs: STATUS_TABS, // 传递给模板
   },
 
   onShow() {
@@ -47,6 +47,7 @@ Page({
         available,
         loading: false,
       });
+      this.updateDisplayList();
     } catch (e) {
       this.setData({ loading: false });
       wx.showToast({ title: e?.message || '加载失败', icon: 'none' });
@@ -55,16 +56,24 @@ Page({
 
   onTabChange(e) {
     this.setData({ current: e.detail.value });
+    this.updateDisplayList();
   },
 
-  filteredList() {
+  onViewChange(e) {
+    this.setData({ view: e.detail.value });
+    this.updateDisplayList();
+  },
+
+  // 更新展示列表
+  updateDisplayList() {
     const { current, list, available, view, role } = this.data;
     const source = role === 'worker' && view === 'available' ? available : list;
-    const result = current === 'all' ? source : (source || []).filter((o) => o.status === current);
-    return (result || []).map((o) => ({
+    const filtered = current === 'all' ? source : (source || []).filter((o) => o.status === current);
+    const displayList = (filtered || []).map((o) => ({
       ...o,
       statusTag: this.statusTag(o.status),
     }));
+    this.setData({ displayList });
   },
 
   statusTag(status) {
@@ -86,10 +95,6 @@ Page({
     wx.navigateTo({ url: `/pages/order-detail/index?id=${id}` });
   },
 
-  onViewChange(e) {
-    this.setData({ view: e.detail.value });
-  },
-
   sortByTimeAsc() {
     const { list, available } = this.data;
     const sortFn = (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
@@ -97,6 +102,7 @@ Page({
       list: [...(list || [])].sort(sortFn),
       available: [...(available || [])].sort(sortFn),
     });
+    this.updateDisplayList();
   },
 
   sortByTimeDesc() {
@@ -106,5 +112,6 @@ Page({
       list: [...(list || [])].sort(sortFn),
       available: [...(available || [])].sort(sortFn),
     });
+    this.updateDisplayList();
   },
 });

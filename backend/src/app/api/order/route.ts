@@ -6,6 +6,29 @@ import { requireUser } from "@/lib/request";
 const SERVICE_TYPES = ["delivery", "shopping", "printing", "tutoring", "errand", "cleaning", "other"] as const;
 type ServiceTypeValue = typeof SERVICE_TYPES[number];
 
+// 订单状态中文映射
+const STATUS_TEXT: Record<string, string> = {
+  unpaid: "待支付",
+  pending: "待接单",
+  in_progress: "服务中",
+  waiting_confirm: "待确认",
+  completed: "已完成",
+  cancelled: "已取消",
+  aftersale: "售后中",
+  appealing: "申诉中",
+};
+
+// 服务类型中文映射
+const SERVICE_TYPE_TEXT: Record<string, string> = {
+  delivery: "代取快递",
+  shopping: "代购物品",
+  printing: "打印服务",
+  tutoring: "学业辅导",
+  errand: "跑腿代办",
+  cleaning: "清洁服务",
+  other: "其他服务",
+};
+
 function toDecimal(amount: number | string | undefined) {
   if (amount === undefined || amount === null) return null;
   const num = typeof amount === "string" ? Number(amount) : amount;
@@ -145,11 +168,13 @@ function serializePublicOrder(o: any) {
     id: o.id,
     orderNo: o.orderNo,
     serviceType: o.serviceType,
+    serviceTypeText: SERVICE_TYPE_TEXT[o.serviceType] || o.serviceType,
     type: o.type,
     title: o.title,
     description: o.description,
     amount: o.amount?.toString?.() ?? o.amount,
     status: o.status,
+    statusText: STATUS_TEXT[o.status] || o.status,
     address: o.address,
     expectedTime: o.expectedTime,
     createdAt: o.createdAt ? o.createdAt.toISOString() : null,
@@ -163,11 +188,13 @@ function serializeOrder(o: any) {
     userId: o.userId,
     workerId: o.workerId,
     serviceType: o.serviceType,
+    serviceTypeText: SERVICE_TYPE_TEXT[o.serviceType] || o.serviceType,
     type: o.type,
     title: o.title,
     description: o.description,
     amount: o.amount?.toString?.() ?? o.amount,
     status: o.status,
+    statusText: STATUS_TEXT[o.status] || o.status,
     address: o.address,
     expectedTime: o.expectedTime,
     contactName: o.contactName,

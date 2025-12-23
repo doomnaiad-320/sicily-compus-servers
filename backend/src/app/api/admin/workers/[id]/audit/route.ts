@@ -6,7 +6,9 @@ function isAdmin(req: NextRequest) {
   return req.headers.get("x-user-role") === "admin";
 }
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+
   const auth = requireUser(req);
   if (!auth.ok) return auth.response;
   if (!isAdmin(req)) return NextResponse.json({ message: "仅管理员可操作" }, { status: 403 });
@@ -18,7 +20,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ message: "缺少决策或原因" }, { status: 400 });
   }
 
-  const worker = await prisma.worker.findUnique({ where: { id: params.id } });
+  const worker = await prisma.worker.findUnique({ where: { id } });
   if (!worker) {
     return NextResponse.json({ message: "兼职者不存在" }, { status: 404 });
   }
@@ -26,7 +28,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const updated = await prisma.$transaction(async (tx) => {
     const status = decision === "approve" ? "approved" : "rejected";
     const w = await tx.worker.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         status,
         statusReason: reason || null,
@@ -36,7 +38,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     await tx.adminAudit.create({
       data: {
         type: "worker",
-        targetId: params.id,
+        targetId: id,
         action: decision === "approve" ? "approve" : "reject",
         reason: reason || "",
       },

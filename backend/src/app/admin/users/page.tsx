@@ -78,6 +78,17 @@ export default function AdminUsersPage() {
     }
   };
 
+  const deleteUser = async (id: string, nickname: string) => {
+    if (!confirm(`确认删除用户 ${nickname || id}？此操作不可恢复！`)) return;
+    try {
+      await adminFetch(`/api/user/${id}`, { method: "DELETE" });
+      alert("用户已删除");
+      await load();
+    } catch (e: any) {
+      alert(e?.message || "删除失败");
+    }
+  };
+
   return (
     <div className="min-h-screen px-6 py-8 space-y-4">
       <div>
@@ -118,9 +129,9 @@ export default function AdminUsersPage() {
                   </button>
                   <button
                     className="rounded-md border border-red-600 px-3 py-1 text-red-700 text-xs"
-                    onClick={() => disable(u.id)}
+                    onClick={() => deleteUser(u.id, u.nickname)}
                   >
-                    禁用
+                    删除
                   </button>
                 </td>
               </tr>

@@ -1,19 +1,323 @@
-.apply {
-  padding: 24rpx;
+// 状态页通用样式
+.status-page {
+  min-height: 100vh;
+  background: #f5f5f5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 120rpx 48rpx 48rpx;
+  box-sizing: border-box;
 }
 
-.picker {
+.status-illustration {
+  width: 200rpx;
+  height: 200rpx;
+  border-radius: 50%;
   display: flex;
   align-items: center;
-  gap: 12rpx;
-  color: #0052d9;
+  justify-content: center;
+  margin-bottom: 48rpx;
+
+  &.pending {
+    background: linear-gradient(135deg, #fff7e6 0%, #ffe7ba 100%);
+    color: #fa8c16;
+  }
+
+  &.rejected {
+    background: linear-gradient(135deg, #fff1f0 0%, #ffa39e 100%);
+    color: #f5222d;
+  }
+
+  &.approved {
+    background: linear-gradient(135deg, #f6ffed 0%, #b7eb8f 100%);
+    color: #52c41a;
+  }
 }
 
-.status {
-  margin: 16rpx 0;
+.status-title {
+  font-size: 44rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 20rpx;
+}
+
+.status-desc {
+  font-size: 28rpx;
   color: #666;
+  text-align: center;
+  line-height: 1.6;
+  margin-bottom: 48rpx;
 }
 
-.actions {
-  margin-top: 24rpx;
+.status-info-card {
+  width: 100%;
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 32rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+  margin-bottom: 48rpx;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.info-label {
+  font-size: 28rpx;
+  color: #999;
+}
+
+.info-value {
+  font-size: 28rpx;
+  color: #333;
+  font-weight: 500;
+
+  &.status-pending {
+    color: #fa8c16;
+  }
+
+  &.status-approved {
+    color: #52c41a;
+  }
+}
+
+.reject-reason-card {
+  width: 100%;
+  background: #fff1f0;
+  border: 1rpx solid #ffccc7;
+  border-radius: 16rpx;
+  padding: 32rpx;
+  margin-bottom: 48rpx;
+}
+
+.reason-label {
+  display: block;
+  font-size: 26rpx;
+  color: #cf1322;
+  margin-bottom: 16rpx;
+}
+
+.reason-content {
+  display: block;
+  font-size: 30rpx;
+  color: #333;
+  line-height: 1.6;
+}
+
+.status-actions {
+  width: 100%;
+  margin-top: auto;
+
+  .t-button {
+    margin-bottom: 24rpx;
+  }
+}
+
+// 申请表单页样式
+.apply-page {
+  min-height: 100vh;
+  background: #f5f5f5;
+  padding-bottom: calc(env(safe-area-inset-bottom) + 40rpx);
+}
+
+// 区块
+.section {
+  margin: 24rpx;
+
+  .section-title {
+    margin-bottom: 20rpx;
+    padding-left: 8rpx;
+
+    .title {
+      font-size: 32rpx;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .desc {
+      display: block;
+      font-size: 26rpx;
+      color: #999;
+      margin-top: 8rpx;
+    }
+  }
+}
+
+// 身份证上传
+.id-card-upload {
+  display: flex;
+  gap: 24rpx;
+}
+
+.id-card-item {
+  flex: 1;
+  aspect-ratio: 1.58;
+  border-radius: 16rpx;
+  background: #fff;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+}
+
+.id-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #fafafa 0%, #f0f0f0 100%);
+  border: 2rpx dashed #d9d9d9;
+  border-radius: 16rpx;
+
+  .id-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: #0052d9;
+
+    text {
+      font-size: 26rpx;
+      margin-top: 12rpx;
+    }
+  }
+}
+
+.id-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.id-delete {
+  position: absolute;
+  top: 12rpx;
+  right: 12rpx;
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// 技能选择
+.skill-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16rpx;
+}
+
+.skill-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24rpx 12rpx;
+  background: #fff;
+  border-radius: 12rpx;
+  border: 2rpx solid #e5e5e5;
+  transition: all 0.2s;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+
+  &.selected {
+    border-color: #0052d9;
+    background: linear-gradient(180deg, #f0f7ff 0%, #e6f0ff 100%);
+
+    .skill-check {
+      background: #0052d9;
+      border-color: #0052d9;
+    }
+
+    .skill-name {
+      color: #0052d9;
+      font-weight: 500;
+    }
+  }
+
+  .skill-check {
+    width: 36rpx;
+    height: 36rpx;
+    border-radius: 50%;
+    border: 2rpx solid #d9d9d9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12rpx;
+    background: #fff;
+  }
+
+  .skill-name {
+    font-size: 24rpx;
+    color: #333;
+    text-align: center;
+    line-height: 1.3;
+  }
+}
+
+// 表单卡片
+.form-card {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 8rpx 32rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+}
+
+.form-item {
+  padding: 28rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  .label {
+    display: block;
+    font-size: 28rpx;
+    color: #333;
+    font-weight: 500;
+    margin-bottom: 16rpx;
+  }
+
+  .input {
+    width: 100%;
+    height: 72rpx;
+    font-size: 28rpx;
+    color: #333;
+    background: #f7f8fa;
+    border-radius: 12rpx;
+    padding: 0 24rpx;
+    box-sizing: border-box;
+  }
+
+  .code-row {
+    display: flex;
+    align-items: center;
+    gap: 20rpx;
+
+    .flex-1 {
+      flex: 1;
+    }
+  }
+}
+
+// 提交区域
+.submit-area {
+  margin: 48rpx 24rpx 24rpx;
+
+  .tip {
+    display: block;
+    text-align: center;
+    font-size: 24rpx;
+    color: #999;
+    margin-top: 20rpx;
+  }
 }

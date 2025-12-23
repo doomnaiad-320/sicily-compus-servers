@@ -1,51 +1,183 @@
 <t-navbar left-arrow title="兼职者申请" />
-<view class="apply">
-  <t-cell-group theme="card">
-    <t-cell title="身份证(PNG)">
-      <view slot="description" class="picker" bindtap="onUpload">
-        <text>{{form.idCardImage ? '已上传' : '上传身份证(PNG)'}}</text>
-        <t-icon name="upload" />
-      </view>
-    </t-cell>
-    <t-cell title="手机号">
-      <t-input
-        slot="description"
-        placeholder="请输入手机号"
-        value="{{form.phone}}"
-        bind:change="onInput"
-        data-field="phone"
-        type="number"
-      />
-    </t-cell>
-    <t-cell title="验证码">
-      <t-input slot="description" placeholder="1111" value="{{form.code}}" bind:change="onInput" data-field="code" />
-    </t-cell>
-    <t-cell title="技能">
-      <t-input
-        slot="description"
-        placeholder="如 跑腿/搬运/代购"
-        value="{{form.skills}}"
-        bind:change="onInput"
-        data-field="skills"
-      />
-    </t-cell>
-    <t-cell title="支付宝账号">
-      <t-input
-        slot="description"
-        placeholder="提现账号"
-        value="{{form.alipayAccount}}"
-        bind:change="onInput"
-        data-field="alipayAccount"
-      />
-    </t-cell>
-  </t-cell-group>
 
-  <view class="status" wx:if="{{status}}">
-    <view>当前状态：{{status}}</view>
-    <view wx:if="{{statusReason}}">原因：{{statusReason}}</view>
+<!-- 审核中状态页 -->
+<view wx:if="{{status === 'pending'}}" class="status-page">
+  <view class="status-illustration pending">
+    <t-icon name="time-filled" size="120rpx" />
+  </view>
+  <text class="status-title">申请审核中</text>
+  <text class="status-desc">您的兼职者申请已提交，我们将在1-3个工作日内完成审核，请耐心等待</text>
+  <view class="status-info-card">
+    <view class="info-row">
+      <text class="info-label">提交时间</text>
+      <text class="info-value">{{submitTime || '刚刚'}}</text>
+    </view>
+    <view class="info-row">
+      <text class="info-label">申请状态</text>
+      <text class="info-value status-pending">审核中</text>
+    </view>
+  </view>
+  <view class="status-actions">
+    <t-button block theme="light" size="large" bindtap="goBack">返回</t-button>
+  </view>
+</view>
+
+<!-- 已拒绝状态页 -->
+<view wx:elif="{{status === 'rejected'}}" class="status-page">
+  <view class="status-illustration rejected">
+    <t-icon name="close-circle-filled" size="120rpx" />
+  </view>
+  <text class="status-title">申请未通过</text>
+  <text class="status-desc">很抱歉，您的兼职者申请未通过审核</text>
+  <view class="reject-reason-card">
+    <text class="reason-label">拒绝原因</text>
+    <text class="reason-content">{{statusReason || '未提供具体原因'}}</text>
+  </view>
+  <view class="status-actions">
+    <t-button block theme="primary" size="large" bindtap="onReapply">重新申请</t-button>
+    <t-button block theme="light" size="large" bindtap="goBack">返回</t-button>
+  </view>
+</view>
+
+<!-- 已通过状态页 -->
+<view wx:elif="{{status === 'approved'}}" class="status-page">
+  <view class="status-illustration approved">
+    <t-icon name="check-circle-filled" size="120rpx" />
+  </view>
+  <text class="status-title">认证成功</text>
+  <text class="status-desc">恭喜您已成为平台兼职者，现在可以开始接单赚钱了</text>
+  <view class="status-info-card">
+    <view class="info-row">
+      <text class="info-label">认证状态</text>
+      <text class="info-value status-approved">已认证</text>
+    </view>
+    <view class="info-row">
+      <text class="info-label">擅长技能</text>
+      <text class="info-value">{{skillNames || '-'}}</text>
+    </view>
+  </view>
+  <view class="status-actions">
+    <t-button block theme="primary" size="large" bindtap="goToOrders">开始接单</t-button>
+    <t-button block theme="light" size="large" bindtap="goBack">返回</t-button>
+  </view>
+</view>
+
+<!-- 申请表单（未申请状态） -->
+<view wx:else class="apply-page">
+  <!-- 身份证上传区域 -->
+  <view class="section">
+    <view class="section-title">
+      <text class="title">身份验证</text>
+      <text class="desc">请上传身份证正反面照片</text>
+    </view>
+    <view class="id-card-upload">
+      <!-- 正面 -->
+      <view class="id-card-item" bindtap="onUploadFront">
+        <image wx:if="{{form.idCardFront}}" class="id-preview" src="{{form.idCardFront}}" mode="aspectFill" />
+        <view wx:else class="id-placeholder">
+          <view class="id-label">
+            <t-icon name="add" size="40rpx" />
+            <text>人像面</text>
+          </view>
+        </view>
+        <view wx:if="{{form.idCardFront}}" class="id-delete" catchtap="onRemoveFront">
+          <t-icon name="close" size="28rpx" color="#fff" />
+        </view>
+      </view>
+      <!-- 反面 -->
+      <view class="id-card-item" bindtap="onUploadBack">
+        <image wx:if="{{form.idCardBack}}" class="id-preview" src="{{form.idCardBack}}" mode="aspectFill" />
+        <view wx:else class="id-placeholder">
+          <view class="id-label">
+            <t-icon name="add" size="40rpx" />
+            <text>国徽面</text>
+          </view>
+        </view>
+        <view wx:if="{{form.idCardBack}}" class="id-delete" catchtap="onRemoveBack">
+          <t-icon name="close" size="28rpx" color="#fff" />
+        </view>
+      </view>
+    </view>
   </view>
 
-  <view class="actions">
-    <t-button block theme="primary" loading="{{saving}}" bindtap="onSubmit">提 交</t-button>
+  <!-- 联系方式 -->
+  <view class="section">
+    <view class="section-title">
+      <text class="title">联系方式</text>
+    </view>
+    <view class="form-card">
+      <view class="form-item">
+        <text class="label">手机号</text>
+        <input
+          class="input"
+          type="number"
+          placeholder="请输入手机号"
+          value="{{form.phone}}"
+          bindinput="onInputPhone"
+        />
+      </view>
+      <view class="form-item">
+        <text class="label">验证码</text>
+        <view class="code-row">
+          <input
+            class="input flex-1"
+            placeholder="请输入验证码"
+            value="{{form.code}}"
+            bindinput="onInputCode"
+          />
+          <t-button size="small" theme="primary" variant="outline" disabled="{{!form.phone}}" bindtap="onSendCode">
+            获取验证码
+          </t-button>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 擅长技能 -->
+  <view class="section">
+    <view class="section-title">
+      <text class="title">擅长技能</text>
+      <text class="desc">请选择您擅长的服务类型（可多选）</text>
+    </view>
+    <view class="skill-grid">
+      <view
+        wx:for="{{skillList}}"
+        wx:key="id"
+        class="skill-item {{item.selected ? 'selected' : ''}}"
+        data-id="{{item.id}}"
+        bindtap="onToggleSkill"
+      >
+        <view class="skill-check">
+          <t-icon wx:if="{{item.selected}}" name="check" size="24rpx" color="#fff" />
+        </view>
+        <text class="skill-name">{{item.name}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 收款账号 -->
+  <view class="section">
+    <view class="section-title">
+      <text class="title">收款账号</text>
+    </view>
+    <view class="form-card">
+      <view class="form-item">
+        <text class="label">支付宝账号</text>
+        <input
+          class="input"
+          placeholder="用于提现收款"
+          value="{{form.alipayAccount}}"
+          bindinput="onInputAlipay"
+        />
+      </view>
+    </view>
+  </view>
+
+  <!-- 提交按钮 -->
+  <view class="submit-area">
+    <t-button block theme="primary" size="large" loading="{{saving}}" bindtap="onSubmit">
+      提交申请
+    </t-button>
+    <text class="tip">提交后我们将在1-3个工作日内审核</text>
   </view>
 </view>

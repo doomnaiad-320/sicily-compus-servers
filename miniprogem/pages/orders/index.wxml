@@ -8,7 +8,7 @@
   </view>
 
   <t-tabs defaultValue="{{current}}" bindchange="onTabChange">
-    <block wx:for="{{STATUS_TABS}}" wx:key="value">
+    <block wx:for="{{statusTabs}}" wx:key="value">
       <t-tab-panel label="{{item.label}}" value="{{item.value}}"></t-tab-panel>
     </block>
   </t-tabs>
@@ -18,9 +18,20 @@
     <t-button size="small" variant="outline" bindtap="sortByTimeAsc">按时间正序</t-button>
   </view>
 
-  <t-cell-group>
+  <!-- 加载中 -->
+  <view wx:if="{{loading}}" class="loading-container">
+    <t-loading theme="circular" size="48rpx" text="加载中..." />
+  </view>
+
+  <!-- 空状态 -->
+  <view wx:elif="{{displayList.length === 0}}" class="empty-container">
+    <t-empty icon="info-circle-filled" description="暂无订单" />
+  </view>
+
+  <!-- 订单列表 -->
+  <t-cell-group wx:else>
     <t-cell
-      wx:for="{{filteredList()}}"
+      wx:for="{{displayList}}"
       wx:key="id"
       title="{{item.title || item.type}} · ¥{{item.amount}}"
       description="{{item.description}}"
