@@ -1,4 +1,5 @@
 import request from "~/api/request";
+import config from "~/config";
 
 const STATUS_MAP = {
   unpaid: {
@@ -49,12 +50,18 @@ Page({
     order: null,
     role: "user",
     isWorker: false,
+    userId: "",
+    workerId: "",
     loading: true,
     actions: [],
     submitting: false,
+    uploading: false,
     statusText: "",
     statusTheme: "default",
     statusBgColor: "linear-gradient(135deg, #0052d9, #0066ff)",
+    canDeliver: false,
+    deliveryNoteInput: "",
+    deliveryImages: [],
   },
 
   async onLoad(query) {
@@ -73,12 +80,16 @@ Page({
       const { id } = this.data;
       let role = "user";
       let isWorker = false;
+      let userId = "";
+      let workerId = "";
 
       // 尝试获取用户信息以确定角色
       try {
         const user = await request("/api/user/info", "GET");
         role = user.currentRole || "user";
+        userId = user.id;
         const workerStatus = user.worker?.status;
+        workerId = user.worker?.id;
         isWorker = role === "worker" || workerStatus === "approved";
       } catch (e) {
         // 未登录，保持用户角色
@@ -101,6 +112,12 @@ Page({
 
       // 只有pending状态（已支付待接单）的订单才是公开订单
       const isPublicOrder = order.status === "pending" && !order.workerId;
+      const canDeliver =
+        isWorker &&
+        order.workerId &&
+        workerId &&
+        order.workerId === workerId &&
+        order.status === "in_progress";
       const actions = this.computeActions(
         order,
         { role, isWorker },
@@ -115,11 +132,16 @@ Page({
         order,
         role,
         isWorker,
+        userId,
+        workerId,
         actions,
         loading: false,
         statusText: statusInfo.text,
         statusTheme: statusInfo.theme,
         statusBgColor: statusInfo.bgColor,
+        canDeliver,
+        deliveryNoteInput: order.deliveryNote || "",
+        deliveryImages: order.deliveryImages || [],
       });
     } catch (e) {
       this.setData({ loading: false });
@@ -157,9 +179,6 @@ Page({
     } else if (isWorker) {
       if (status === "pending") {
         actions.push({ key: "take", text: "接单", theme: "primary" });
-      }
-      if (status === "in_progress") {
-        actions.push({ key: "complete", text: "服务完成", theme: "primary" });
       }
     }
     return actions;
@@ -235,5 +254,109 @@ Page({
       current: url,
       urls: order.images,
     });
+  },
+
+  // 预览交付图片
+  previewDeliveryImage(e) {
+    const { url } = e.currentTarget.dataset;
+    const { deliveryImages } = this.data;
+    if (!url || !deliveryImages || deliveryImages.length === 0) return;
+    wx.previewImage({
+      current: url,
+      urls: deliveryImages,
+    });
+  },
+
+  onNoteInput(e) {
+    this.setData({ deliveryNoteInput: e.detail.value });
+  },
+
+  removeDeliveryImage(e) {
+    const { index } = e.currentTarget.dataset;
+    const { deliveryImages } = this.data;
+    if (index === undefined || index === null) return;
+    const next = [...deliveryImages];
+    next.splice(index, 1);
+    this.setData({ deliveryImages: next });
+  },
+
+  chooseDeliveryImages() {
+    const { deliveryImages } = this.data;
+    const remain = Math.max(0, 6 - deliveryImages.length);
+    if (remain <= 0) {
+      wx.showToast({ title: "最多上传6张图片", icon: "none" });
+      return;
+    }
+    wx.chooseImage({
+      count: remain,
+      sizeType: ["compressed"],
+      sourceType: ["album", "camera"],
+      success: async (res) => {
+        const files = res.tempFilePaths || [];
+        if (!files.length) return;
+        wx.showLoading({ title: "上传中..." });
+        this.setData({ uploading: true });
+        try {
+          const uploaded = [];
+          for (const filePath of files) {
+            const url = await this.uploadSingleImage(filePath);
+            uploaded.push(url);
+          }
+          this.setData({
+            deliveryImages: [...this.data.deliveryImages, ...uploaded],
+          });
+        } catch (err) {
+          wx.showToast({ title: err?.message || "上传失败", icon: "none" });
+        } finally {
+          wx.hideLoading();
+          this.setData({ uploading: false });
+        }
+      },
+    });
+  },
+
+  uploadSingleImage(filePath) {
+    return new Promise((resolve, reject) => {
+      wx.uploadFile({
+        url: `${config.baseUrl}/api/upload`,
+        filePath,
+        name: "file",
+        success: (res) => {
+          try {
+            const data = JSON.parse(res.data || "{}");
+            const url =
+              data.absoluteUrl || (data.url ? `${config.baseUrl}${data.url}` : "");
+            if (!url) {
+              reject(new Error("上传失败"));
+              return;
+            }
+            resolve(url);
+          } catch (e) {
+            reject(e);
+          }
+        },
+        fail: (err) => reject(err),
+      });
+    });
+  },
+
+  // 提交交付
+  async submitDelivery() {
+    const { id, canDeliver, deliveryNoteInput, deliveryImages, submitting } =
+      this.data;
+    if (!canDeliver || submitting) return;
+    this.setData({ submitting: true });
+    try {
+      await request(`/api/order/${id}/complete`, "POST", {
+        note: deliveryNoteInput?.trim?.() || "",
+        images: deliveryImages,
+      });
+      wx.showToast({ title: "交付成功", icon: "success" });
+      await this.fetchData();
+    } catch (e) {
+      wx.showToast({ title: e?.message || "交付失败", icon: "none" });
+    } finally {
+      this.setData({ submitting: false });
+    }
   },
 });

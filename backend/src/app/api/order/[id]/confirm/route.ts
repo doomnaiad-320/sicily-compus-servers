@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/request";
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const auth = requireUser(req);
   if (!auth.ok) return auth.response;
 
-  const order = await prisma.order.findUnique({ where: { id: params.id } });
+  const order = await prisma.order.findUnique({ where: { id } });
   if (!order || order.userId !== auth.userId) {
     return NextResponse.json({ message: "订单不存在" }, { status: 404 });
   }
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   const result = await prisma.$transaction(async (tx) => {
     const updated = await tx.order.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         status: "completed",
         confirmedAt: now,

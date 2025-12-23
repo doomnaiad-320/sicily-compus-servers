@@ -49,6 +49,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     contactName: order.contactName,
     contactPhone: order.contactPhone,
     images: (order.images as string[]) || [],
+    deliveryNote: order.deliveryNote,
+    deliveryImages: (order.deliveryImages as string[]) || [],
+    deliveredAt: order.deliveredAt?.toISOString() || null,
     createdAt: order.createdAt.toISOString(),
     updatedAt: order.updatedAt.toISOString(),
     user: order.user

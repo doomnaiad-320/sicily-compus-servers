@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/request";
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const auth = requireUser(req);
   if (!auth.ok) return auth.response;
 
@@ -14,7 +15,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   }
 
   const order = await prisma.order.findUnique({
-    where: { id: params.id },
+    where: { id },
   });
 
   if (!order || order.userId !== auth.userId) {
@@ -27,13 +28,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   const updated = await prisma.$transaction(async (tx) => {
     const afterSale = await tx.afterSale.upsert({
-      where: { orderId: params.id },
+      where: { orderId: id },
       update: { reason, status: "pending", result: null },
-      create: { orderId: params.id, reason, status: "pending" },
+      create: { orderId: id, reason, status: "pending" },
     });
 
     const orderUpdated = await tx.order.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         status: "aftersale",
       },

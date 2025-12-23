@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/request";
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const auth = requireUser(req);
   if (!auth.ok) return auth.response;
 
@@ -14,7 +15,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   }
 
   const order = await prisma.order.findUnique({
-    where: { id: params.id },
+    where: { id },
   });
 
   if (!order || order.userId !== auth.userId) {
@@ -24,7 +25,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const created = await prisma.$transaction(async (tx) => {
     const appeal = await tx.appeal.create({
       data: {
-        orderId: params.id,
+        orderId: id,
         userId: auth.userId!,
         reason,
         status: "pending",
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     });
 
     await tx.order.update({
-      where: { id: params.id },
+      where: { id },
       data: { status: "appealing" },
     });
 

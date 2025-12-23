@@ -77,6 +77,90 @@
         />
       </view>
     </view>
+
+    <!-- 交付内容录入（仅接单兼职者且服务中） -->
+    <view class="info-card" wx:if="{{canDeliver}}">
+      <view class="card-title">交付内容</view>
+      <view class="input-group">
+        <view class="input-row">
+          <text class="input-label">备注</text>
+          <text class="input-tip">对用户可见，描述服务情况</text>
+        </view>
+        <textarea
+          class="delivery-textarea"
+          value="{{deliveryNoteInput}}"
+          placeholder="填写服务备注"
+          placeholder-class="placeholder"
+          maxlength="200"
+          auto-height
+          bindinput="onNoteInput"
+        />
+      </view>
+      <view class="input-group">
+        <view class="input-row">
+          <text class="input-label">交付图片</text>
+          <text class="input-tip">最多6张</text>
+        </view>
+        <view class="upload-list">
+          <view
+            wx:for="{{deliveryImages}}"
+            wx:key="index"
+            class="upload-thumb"
+            data-index="{{index}}"
+          >
+            <image
+              src="{{item}}"
+              mode="aspectFill"
+              data-url="{{item}}"
+              bindtap="previewDeliveryImage"
+            />
+            <view class="upload-remove" data-index="{{index}}" catchtap="removeDeliveryImage">×</view>
+          </view>
+          <view
+            wx:if="{{deliveryImages.length < 6}}"
+            class="upload-add"
+            bindtap="chooseDeliveryImages"
+          >
+            <text>＋</text>
+          </view>
+        </view>
+      </view>
+      <t-button
+        block
+        theme="primary"
+        size="large"
+        loading="{{submitting || uploading}}"
+        bindtap="submitDelivery"
+      >
+        交付任务
+      </t-button>
+    </view>
+
+    <!-- 交付内容展示 -->
+    <view
+      class="info-card"
+      wx:if="{{order.deliveryNote || (order.deliveryImages && order.deliveryImages.length > 0)}}"
+    >
+      <view class="card-title">交付内容</view>
+      <view class="info-row desc-row" wx:if="{{order.deliveryNote}}">
+        <text class="info-label">备注</text>
+        <text class="info-value desc-text">{{order.deliveryNote}}</text>
+      </view>
+      <view class="image-list" wx:if="{{order.deliveryImages && order.deliveryImages.length > 0}}">
+        <image
+          wx:for="{{order.deliveryImages}}"
+          wx:key="index"
+          src="{{item}}"
+          mode="aspectFill"
+          class="order-image"
+          data-url="{{item}}"
+          bindtap="previewDeliveryImage"
+        />
+      </view>
+      <view class="deliver-meta" wx:if="{{order.deliveredAt}}">
+        <text>交付时间：{{order.deliveredAt}}</text>
+      </view>
+    </view>
   </view>
 
   <!-- 空状态 -->

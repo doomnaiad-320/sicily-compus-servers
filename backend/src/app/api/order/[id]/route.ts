@@ -33,14 +33,15 @@ function toDecimal(amount: number | string | undefined) {
   return new Prisma.Decimal(num);
 }
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const search = req.nextUrl.searchParams;
   const isPublic = search.get("public") === "true";
 
   // 先尝试查找已支付待接单的公开订单（任何人都可以查看）
   const publicOrder = await prisma.order.findFirst({
     where: {
-      id: params.id,
+      id,
       status: "pending", // 只有已支付待接单的订单才公开可见
       workerId: null,
     },
@@ -57,7 +58,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
   const order = await prisma.order.findFirst({
     where: {
-      id: params.id,
+      id,
       OR: [
         { userId: auth.userId! },
         { worker: { userId: auth.userId! } },
@@ -78,9 +79,10 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json(serializeOrder(order));
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = requireUser(req);
   if (!auth.ok) return auth.response;
+  const { id } = await params; // promise-based params
 
   const body = await req.json().catch(() => ({}));
   const { type, description, amount, address, title, expectedTime, contactName, contactPhone, images } = body as {
@@ -95,7 +97,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     images?: string[];
   };
 
-  const order = await prisma.order.findUnique({ where: { id: params.id } });
+  const order = await prisma.order.findUnique({ where: { id } });
   if (!order || order.userId !== auth.userId) {
     return NextResponse.json({ message: "订单不存在" }, { status: 404 });
   }
@@ -110,7 +112,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   }
 
   const updated = await prisma.order.update({
-    where: { id: params.id },
+    where: { id },
     data: {
       ...(type ? { type } : {}),
       ...(title ? { title } : {}),
@@ -127,11 +129,12 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json(serializeOrder(updated));
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = requireUser(req);
   if (!auth.ok) return auth.response;
+  const { id } = await params;
 
-  const order = await prisma.order.findUnique({ where: { id: params.id } });
+  const order = await prisma.order.findUnique({ where: { id } });
   if (!order || order.userId !== auth.userId) {
     return NextResponse.json({ message: "订单不存在" }, { status: 404 });
   }
@@ -140,7 +143,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     return NextResponse.json({ message: "仅待支付订单可删除" }, { status: 400 });
   }
 
-  await prisma.order.delete({ where: { id: params.id } });
+  await prisma.order.delete({ where: { id } });
 
   return NextResponse.json({ success: true });
 }
@@ -183,6 +186,9 @@ function serializeOrder(o: any) {
     contactName: o.contactName,
     contactPhone: o.contactPhone,
     images: o.images || [],
+    deliveryNote: o.deliveryNote,
+    deliveryImages: o.deliveryImages || [],
+    deliveredAt: o.deliveredAt ? o.deliveredAt.toISOString() : null,
     review: o.review || null,
     afterSale: o.afterSale || null,
     appeals: o.appeals || [],

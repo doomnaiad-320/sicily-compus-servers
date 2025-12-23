@@ -168,6 +168,9 @@ model Order {
   expectedTime       String?
   contactName        String?
   contactPhone       String?
+  deliveryNote       String?
+  deliveryImages     Json?
+  deliveredAt        DateTime?
   images             Json?
   paidAt             DateTime?
   readyAt            DateTime?

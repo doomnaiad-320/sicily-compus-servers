@@ -26,6 +26,9 @@ type OrderDetail = Order & {
   appeals?: { id: string; status: string; reason: string; result: string | null }[];
   updatedAt?: string;
   images?: string[];
+  deliveryNote?: string;
+  deliveryImages?: string[];
+  deliveredAt?: string | null;
 };
 
 const STATUS_OPTIONS = [
@@ -183,7 +186,7 @@ export default function AdminOrdersPage() {
                   )}
                 </td>
                 <td className="px-4 py-3 text-xs text-slate-500">{o.expectedTime || "-"}</td>
-                <td className="px-4 py-3 capitalize">{o.status}</td>
+                <td className="px-4 py-3">{STATUS_OPTIONS.find((s) => s.value === o.status)?.label || o.status}</td>
                 <td className="px-4 py-3 text-xs text-slate-500">{o.createdAt}</td>
                 <td className="px-4 py-3 text-right">
                   <button
@@ -302,15 +305,42 @@ export default function AdminOrdersPage() {
               {detail.images && detail.images.length > 0 ? (
                 <div className="rounded-lg border border-slate-100 bg-slate-50 px-4 py-3 space-y-2">
                   <p className="font-medium text-slate-900">附件图片</p>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-3">
                     {detail.images.map((img) => (
-                      <span key={img} className="rounded bg-white border border-slate-200 px-2 py-1 text-xs text-slate-600">
-                        {img}
-                      </span>
+                      <img
+                        key={img}
+                        src={img}
+                        alt="附件图片"
+                        className="h-24 w-24 rounded border border-slate-200 object-cover bg-white"
+                      />
                     ))}
                   </div>
                 </div>
               ) : null}
+
+              {(detail.deliveryNote || (detail.deliveryImages && detail.deliveryImages.length > 0)) && (
+                <div className="rounded-lg border border-amber-100 bg-amber-50 px-4 py-3 space-y-2">
+                  <p className="font-medium text-amber-900">交付内容</p>
+                  {detail.deliveryNote ? (
+                    <p className="text-slate-800 whitespace-pre-line">备注：{detail.deliveryNote}</p>
+                  ) : null}
+                  {detail.deliveryImages && detail.deliveryImages.length > 0 ? (
+                    <div className="flex flex-wrap gap-3">
+                      {detail.deliveryImages.map((img) => (
+                        <img
+                          key={img}
+                          src={img}
+                          alt="交付图片"
+                          className="h-24 w-24 rounded border border-amber-200 object-cover bg-white"
+                        />
+                      ))}
+                    </div>
+                  ) : null}
+                  {detail.deliveredAt ? (
+                    <p className="text-xs text-amber-700">交付时间：{detail.deliveredAt}</p>
+                  ) : null}
+                </div>
+              )}
 
               {detail.review ? (
                 <div className="rounded-lg border border-slate-100 bg-slate-50 px-4 py-3">

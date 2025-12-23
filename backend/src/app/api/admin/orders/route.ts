@@ -41,6 +41,9 @@ export async function GET(req: NextRequest) {
     contactName: o.contactName,
     contactPhone: o.contactPhone,
     images: (o.images as string[]) || [],
+    deliveryNote: o.deliveryNote,
+    deliveryImages: (o.deliveryImages as string[]) || [],
+    deliveredAt: o.deliveredAt?.toISOString() || null,
     createdAt: o.createdAt.toISOString(),
     updatedAt: o.updatedAt.toISOString(),
     user: o.user
