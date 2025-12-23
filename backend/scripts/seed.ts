@@ -55,7 +55,7 @@ async function main() {
     users.push(user);
   }
 
-  // 创建兼职者（短 ID）
+  // 创建兼职者（使用与用户相同的 ID）
   const workerStatuses: WorkerStatus[] = [
     WorkerStatus.approved,
     WorkerStatus.approved,
@@ -70,16 +70,16 @@ async function main() {
   for (let i = 0; i < workerStatuses.length; i++) {
     const user = users[i + 5];
     const status = workerStatuses[i];
-    const id = `W${String(i + 1).padStart(3, "0")}`;
+    // Worker ID = User ID，一人一个 ID
     const worker = await prisma.worker.create({
       data: {
-        id,
+        id: user.id, // 使用用户 ID 作为兼职者 ID
         userId: user.id,
         idCardImage: "/uploads/mock-id.png",
         skills: "跑腿/搬运",
         status,
         statusReason: status === WorkerStatus.rejected ? "资料不完整" : null,
-        alipayAccount: `alipay_${i + 1}@example.com`,
+        alipayAccount: `alipay_${user.id}@example.com`,
         balance: 100 + i * 20,
         isAccepting: status === WorkerStatus.approved,
         phoneVerified: true,

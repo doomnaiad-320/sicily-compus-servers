@@ -35,7 +35,7 @@
         wx:for="{{filteredOrders}}"
         wx:key="id"
         order="{{item}}"
-        canTake="{{isWorker}}"
+        canTake="{{role === 'worker'}}"
         bind:cardtap="onCardTap"
         bind:taketap="onTakeTap"
       />

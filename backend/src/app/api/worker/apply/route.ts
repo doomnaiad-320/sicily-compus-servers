@@ -52,6 +52,7 @@ export async function POST(req: NextRequest) {
         })
       : await tx.worker.create({
           data: {
+            id: auth.userId!, // 使用用户 ID 作为兼职者 ID，一人一个 ID
             userId: auth.userId!,
             idCardImage,
             skills: skills || "",

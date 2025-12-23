@@ -1,33 +1,39 @@
-import config from '~/config';
+import config from "~/config";
 
 const { baseUrl } = config;
-const delay = config.isMock ? 500 : 0;
+const delay = config.isMock ? 200 : 0;
 
-function request(url, method = 'GET', data = {}) {
+function request(url, method = "GET", data = {}) {
   const header = {
-    'content-type': 'application/json',
+    "content-type": "application/json",
   };
-  const tokenString = wx.getStorageSync('access_token');
+  const tokenString = wx.getStorageSync("access_token");
   if (tokenString) {
     header.Authorization = `Bearer ${tokenString}`;
   }
 
   return new Promise((resolve, reject) => {
+    const isAbsolute = /^https?:\/\//.test(url);
+    const requestUrl = isAbsolute ? url : config.isMock ? url : baseUrl + url;
+
     wx.request({
-      url: baseUrl + url,
+      url: requestUrl,
       method,
       data,
-      dataType: 'json',
+      dataType: "json",
       header,
       success(res) {
         setTimeout(() => {
-          const { statusCode, data: payload } = res;
+          // mock 响应没有 statusCode，这里做兼容
+          const payload = res.data !== undefined ? res.data : res;
+          const statusCode = res.statusCode ?? payload.code ?? 200;
+
           if (statusCode >= 200 && statusCode < 300) {
             resolve(payload);
-          } else if (statusCode === 401) {
-            wx.removeStorageSync('access_token');
-            wx.showToast({ title: '请重新登录', icon: 'none' });
-            wx.switchTab({ url: '/pages/my/index' });
+          } else if (statusCode === 401 || payload.code === 401) {
+            wx.removeStorageSync("access_token");
+            wx.showToast({ title: "请重新登录", icon: "none" });
+            wx.switchTab({ url: "/pages/my/index" });
             reject(payload);
           } else {
             reject(payload);

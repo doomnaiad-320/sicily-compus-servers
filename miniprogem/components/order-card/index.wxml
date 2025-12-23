@@ -31,16 +31,13 @@
   <!-- 底部操作区 -->
   <view class="order-card__footer">
     <view class="order-card__no">#{{order.orderNo || order.id}}</view>
-    <t-button
-      wx:if="{{canTake}}"
-      size="extra-small"
-      theme="primary"
-      catchtap="onTakeTap"
-    >
-      立即接单
-    </t-button>
-    <view wx:else class="order-card__view-btn">
-      <text>查看详情</text>
+    <view class="order-card__actions">
+      <view class="order-card__view-btn">
+        <text>查看详情</text>
+      </view>
+      <view wx:if="{{canTake}}" class="order-card__take-btn" catchtap="onTakeTap">
+        <text>立即接单</text>
+      </view>
     </view>
   </view>
 </view>
