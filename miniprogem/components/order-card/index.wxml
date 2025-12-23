@@ -1,0 +1,46 @@
+<view class="order-card" bindtap="onCardTap">
+  <!-- 顶部服务类型标识 -->
+  <view class="order-card__header" style="background: {{serviceColor}};">
+    <view class="order-card__type">
+      <text class="order-card__type-text">{{order.type}}</text>
+    </view>
+    <text class="order-card__amount">{{order.amount}}</text>
+  </view>
+
+  <!-- 订单内容 -->
+  <view class="order-card__body">
+    <!-- 标题 -->
+    <view class="order-card__title">{{order.title || order.type}}</view>
+
+    <!-- 描述 -->
+    <view class="order-card__desc">{{order.description}}</view>
+
+    <!-- 地址 -->
+    <view class="order-card__info">
+      <text class="order-card__info-icon">📍</text>
+      <text class="order-card__info-text">{{order.address}}</text>
+    </view>
+
+    <!-- 期望时间 -->
+    <view class="order-card__info" wx:if="{{order.expectedTime}}">
+      <text class="order-card__info-icon">⏰</text>
+      <text class="order-card__info-text">{{order.expectedTime}}</text>
+    </view>
+  </view>
+
+  <!-- 底部操作区 -->
+  <view class="order-card__footer">
+    <view class="order-card__no">#{{order.orderNo || order.id}}</view>
+    <t-button
+      wx:if="{{canTake}}"
+      size="extra-small"
+      theme="primary"
+      catchtap="onTakeTap"
+    >
+      立即接单
+    </t-button>
+    <view wx:else class="order-card__view-btn">
+      <text>查看详情</text>
+    </view>
+  </view>
+</view>
