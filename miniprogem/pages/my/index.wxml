@@ -11,10 +11,10 @@
           <view class="name">{{personalInfo.nickname || '用户'}}</view>
           <view class="tags">
             <t-tag class="tag" variant="light">{{personalInfo.currentRole === 'worker' ? '兼职者' : '用户'}}</t-tag>
-            <!-- 兼职者审核状态标签 -->
-            <t-tag wx:if="{{personalInfo.worker && personalInfo.worker.status === 'approved'}}" class="tag" variant="light" theme="success">已通过审核</t-tag>
-            <t-tag wx:elif="{{personalInfo.worker && personalInfo.worker.status === 'pending'}}" class="tag" variant="light" theme="warning">审核中</t-tag>
-            <t-tag wx:elif="{{personalInfo.worker && personalInfo.worker.status === 'rejected'}}" class="tag" variant="light" theme="danger">未通过</t-tag>
+            <!-- 兼职者审核状态标签（仅在兼职者模式下显示） -->
+            <t-tag wx:if="{{personalInfo.currentRole === 'worker' && personalInfo.worker && personalInfo.worker.status === 'approved'}}" class="tag" variant="light" theme="success">已通过审核</t-tag>
+            <t-tag wx:elif="{{personalInfo.currentRole === 'worker' && personalInfo.worker && personalInfo.worker.status === 'pending'}}" class="tag" variant="light" theme="warning">审核中</t-tag>
+            <t-tag wx:elif="{{personalInfo.currentRole === 'worker' && personalInfo.worker && personalInfo.worker.status === 'rejected'}}" class="tag" variant="light" theme="danger">未通过</t-tag>
           </view>
         </view>
         <!-- 只有审核通过的兼职者才显示切换按钮 -->

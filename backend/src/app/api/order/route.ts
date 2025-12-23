@@ -109,10 +109,15 @@ export async function GET(req: NextRequest) {
 
   // 公开接口：获取已支付且待接单的订单（首页展示用）
   if (isPublic) {
+    // 尝试获取当前用户ID（如果已登录），用于过滤自己发布的订单
+    const auth = requireUser(req);
+    const currentUserId = auth.ok ? auth.userId : null;
+
     const orders = await prisma.order.findMany({
       where: {
         status: "pending", // 只展示已支付待接单的订单
         workerId: null,
+        ...(currentUserId ? { userId: { not: currentUserId } } : {}), // 已登录时排除自己发布的订单
       },
       orderBy: { createdAt: "desc" },
       take: 100,
@@ -137,18 +142,26 @@ export async function GET(req: NextRequest) {
     }
 
     if (view === "available") {
+      // 可接单列表：待接单且不是自己发布的订单
       const orders = await prisma.order.findMany({
         where: {
           status: "pending",
           workerId: null,
+          userId: { not: auth.userId! }, // 不显示自己发布的订单
         },
         orderBy: { createdAt: "desc" },
       });
       return NextResponse.json(orders.map(serializeOrder));
     }
 
+    // 我的订单：包含自己接的订单 + 自己发布的订单
     const orders = await prisma.order.findMany({
-      where: { workerId: worker.id },
+      where: {
+        OR: [
+          { workerId: worker.id }, // 自己接的订单
+          { userId: auth.userId! }, // 自己发布的订单
+        ],
+      },
       orderBy: { updatedAt: "desc" },
     });
     return NextResponse.json(orders.map(serializeOrder));

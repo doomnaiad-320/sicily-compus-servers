@@ -94,14 +94,25 @@ Page({
   async loadOrders() {
     this.setData({ loading: true });
     try {
+      const { isWorker } = this.data;
+
       // 获取所有待接单状态的订单（公开展示）
-      const orders = await request(
-        "/api/order?status=pending&public=true",
-        "GET",
+      const [publicOrders, userOrders] = await Promise.all([
+        request("/api/order?status=pending&public=true", "GET"),
+        // 兼职者角色时，把自己作为用户发布的订单也带上
+        isWorker ? request("/api/order?role=user", "GET") : Promise.resolve([]),
+      ]);
+
+      // 合并公开订单 + 自己发布的订单（仅待接单且未被接）
+      const mergedOrders = this.mergeOrders(
+        publicOrders,
+        (userOrders || []).filter(
+          (o) => o.status === "pending" && !o.workerId,
+        ),
       );
 
       // 格式化订单数据
-      const formattedOrders = (orders || []).map((order) => ({
+      const formattedOrders = (mergedOrders || []).map((order) => ({
         id: order.id,
         orderNo: order.orderNo,
         type: SERVICE_TYPE_MAP[order.serviceType] || order.type || "服务",
@@ -124,6 +135,17 @@ Page({
     } finally {
       this.setData({ loading: false });
     }
+  },
+
+  // 合并订单列表去重
+  mergeOrders(...lists) {
+    const map = {};
+    (lists || []).forEach((list) => {
+      (list || []).forEach((item) => {
+        map[item.id] = item;
+      });
+    });
+    return Object.values(map);
   },
 
   // 格式化时间

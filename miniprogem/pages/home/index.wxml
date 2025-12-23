@@ -43,16 +43,16 @@
   </t-pull-down-refresh>
 </view>
 
-<!-- 发布按钮 -->
-<view class="home-release">
+<!-- 发布按钮（仅用户模式显示） -->
+<view wx:if="{{role === 'user'}}" class="home-release">
   <t-button theme="primary" size="large" icon="add" shape="round" bindtap="goRelease">
     发布
   </t-button>
 </view>
 
 <!-- 角色提示 -->
-<view class="role-indicator {{isWorker ? 'role-indicator--worker' : ''}}">
-  <text>{{isWorker ? '兼职模式' : '用户模式'}}</text>
+<view class="role-indicator {{role === 'worker' ? 'role-indicator--worker' : ''}}">
+  <text>{{role === 'worker' ? '兼职模式' : '用户模式'}}</text>
 </view>
 
 <t-message id="t-message" />

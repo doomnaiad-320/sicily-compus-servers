@@ -34,10 +34,14 @@ Page({
       let primary = [];
       let available = [];
       if (role === 'worker') {
-        [primary, available] = await Promise.all([
+        const [workerOrders, userOrders, availableOrders] = await Promise.all([
           request('/api/order?role=worker', 'GET'),
+          // 以用户身份发布的订单也要带上
+          request('/api/order?role=user', 'GET'),
           request('/api/order?role=worker&view=available', 'GET'),
         ]);
+        primary = this.mergeOrders(workerOrders, userOrders);
+        available = availableOrders;
       } else {
         primary = await request('/api/order', 'GET');
       }
@@ -52,6 +56,17 @@ Page({
       this.setData({ loading: false });
       wx.showToast({ title: e?.message || '加载失败', icon: 'none' });
     }
+  },
+
+  // 合并订单去重
+  mergeOrders(...lists) {
+    const map = {};
+    (lists || []).forEach((list) => {
+      (list || []).forEach((item) => {
+        map[item.id] = item;
+      });
+    });
+    return Object.values(map);
   },
 
   onTabChange(e) {
