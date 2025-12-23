@@ -52,6 +52,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     deliveryNote: order.deliveryNote,
     deliveryImages: (order.deliveryImages as string[]) || [],
     deliveredAt: order.deliveredAt?.toISOString() || null,
+    cancelReason: order.cancelReason,
+    cancelledBy: order.cancelledBy,
     createdAt: order.createdAt.toISOString(),
     updatedAt: order.updatedAt.toISOString(),
     user: order.user
