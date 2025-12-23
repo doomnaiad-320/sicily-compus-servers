@@ -30,8 +30,15 @@ const STATUS_OPTIONS = [
 const statusText = {
   pending: "审核中",
   approved: "已通过",
-  rejected: "已拒绝",
+  rejected: "未通过",
   none: "未申请",
+} as Record<string, string>;
+
+const statusColor = {
+  pending: "bg-yellow-100 text-yellow-700",
+  approved: "bg-green-100 text-green-700",
+  rejected: "bg-red-100 text-red-700",
+  none: "bg-slate-100 text-slate-600",
 } as Record<string, string>;
 
 export default function AdminWorkersPage() {
@@ -172,8 +179,10 @@ export default function AdminWorkersPage() {
                   <div className="text-xs text-slate-500">{w.user?.phone || "-"}</div>
                 </td>
                 <td className="px-4 py-3">
-                  <div className="capitalize">{statusText[w.status] || w.status}</div>
-                  {w.statusReason ? <div className="text-xs text-red-500">{w.statusReason}</div> : null}
+                  <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${statusColor[w.status] || statusColor.none}`}>
+                    {statusText[w.status] || w.status}
+                  </span>
+                  {w.statusReason ? <div className="text-xs text-red-500 mt-1">{w.statusReason}</div> : null}
                 </td>
                 <td className="px-4 py-3">
                   {w.stats
