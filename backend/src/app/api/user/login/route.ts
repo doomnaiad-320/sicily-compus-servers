@@ -2,27 +2,73 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { signUserToken } from "@/lib/auth";
 
+const WECHAT_APPID = process.env.WECHAT_APPID || "";
+const WECHAT_SECRET = process.env.WECHAT_SECRET || "";
+
+interface WxSession {
+  openid?: string;
+  session_key?: string;
+  errcode?: number;
+  errmsg?: string;
+}
+
+async function code2Session(code: string): Promise<WxSession> {
+  const url = `https://api.weixin.qq.com/sns/jscode2session?appid=${WECHAT_APPID}&secret=${WECHAT_SECRET}&js_code=${code}&grant_type=authorization_code`;
+
+  const response = await fetch(url);
+  const data = await response.json();
+  return data as WxSession;
+}
+
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
-  const { openid, nickname, avatar } = body as {
+  const { code, openid: directOpenid, nickname, avatar } = body as {
+    code?: string;
     openid?: string;
     nickname?: string;
     avatar?: string;
   };
 
+  let openid: string | undefined;
+
+  // 优先使用code换取openid（生产环境）
+  if (code) {
+    if (!WECHAT_APPID || !WECHAT_SECRET) {
+      return NextResponse.json(
+        { message: "微信配置缺失，请联系管理员" },
+        { status: 500 }
+      );
+    }
+
+    const wxSession = await code2Session(code);
+
+    if (wxSession.errcode) {
+      console.error("微信登录失败:", wxSession);
+      return NextResponse.json(
+        { message: `微信登录失败: ${wxSession.errmsg || "未知错误"}` },
+        { status: 400 }
+      );
+    }
+
+    openid = wxSession.openid;
+  } else if (directOpenid) {
+    // 兼容开发环境直接传openid
+    openid = directOpenid;
+  }
+
   if (!openid) {
-    return NextResponse.json({ message: "缺少 openid" }, { status: 400 });
+    return NextResponse.json({ message: "缺少登录凭证" }, { status: 400 });
   }
 
   const user = await prisma.user.upsert({
     where: { openid },
     update: {
-      nickname: nickname || "用户",
-      avatar: avatar || null,
+      ...(nickname ? { nickname } : {}),
+      ...(avatar ? { avatar } : {}),
     },
     create: {
       openid,
-      nickname: nickname || "新用户",
+      nickname: nickname || "微信用户",
       avatar: avatar || null,
     },
     include: {
@@ -44,6 +90,8 @@ export async function POST(req: NextRequest) {
       nickname: user.nickname,
       avatar: user.avatar,
       currentRole: user.currentRole,
+      isWorker: !!user.worker,
+      workerStatus: user.worker?.status || null,
     },
   });
 }

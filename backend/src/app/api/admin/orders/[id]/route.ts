@@ -6,16 +6,26 @@ function isAdmin(req: NextRequest) {
   return req.headers.get("x-user-role") === "admin";
 }
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = requireUser(req);
   if (!auth.ok) return auth.response;
   if (!isAdmin(req)) return NextResponse.json({ message: "仅管理员可访问" }, { status: 403 });
 
+  const { id } = await params;
+
+  if (!id) {
+    return NextResponse.json({ message: "缺少订单ID" }, { status: 400 });
+  }
+
   const order = await prisma.order.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: {
       user: true,
-      worker: true,
+      worker: {
+        include: {
+          user: true,
+        },
+      },
       review: true,
       afterSale: true,
       appeals: true,
@@ -30,10 +40,15 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const plain = {
     id: order.id,
     type: order.type,
+    title: order.title,
     description: order.description,
     status: order.status,
     amount: order.amount.toString(),
     address: order.address,
+    expectedTime: order.expectedTime,
+    contactName: order.contactName,
+    contactPhone: order.contactPhone,
+    images: (order.images as string[]) || [],
     createdAt: order.createdAt.toISOString(),
     updatedAt: order.updatedAt.toISOString(),
     user: order.user
@@ -48,6 +63,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       ? {
           id: order.worker.id,
           userId: order.worker.userId,
+          nickname: order.worker.user?.nickname,
+          phone: order.worker.user?.phone,
         }
       : null,
     review: order.review

@@ -1,73 +1,71 @@
 .login {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: #fff;
+
+  &__header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 120rpx 32rpx 80rpx;
+  }
+
+  &__logo {
+    width: 160rpx;
+    height: 160rpx;
+    margin-bottom: 32rpx;
+    border-radius: 32rpx;
+    background: #f5f5f5;
+  }
+
   &__title {
     color: rgba(0, 0, 0, 0.9);
-    font-size: 56rpx;
+    font-size: 48rpx;
     font-weight: 600;
-    line-height: 72rpx;
-    padding: 16rpx 32rpx 40rpx;
+    line-height: 64rpx;
+    margin-bottom: 16rpx;
   }
 
-  &__input {
-    .input-label {
-      display: flex;
-      padding-right: 32rpx;
-      box-sizing: border-box;
-      border-right: 1rpx solid #e7e7e7;
-    }
-
-    .input-icon {
-      margin-left: 8rpx;
-    }
-  }
-
-  &__tips {
+  &__subtitle {
     color: rgba(0, 0, 0, 0.4);
-    font-size: 24rpx;
-    font-style: normal;
-    font-weight: 400;
+    font-size: 28rpx;
     line-height: 40rpx;
-    margin: 24rpx 32rpx 32rpx;
+  }
+
+  &__content {
+    flex: 1;
+    padding: 64rpx 32rpx;
   }
 
   &__button {
-    margin: 0 32rpx;
+    margin-bottom: 48rpx;
   }
 
-  &__password--forget {
+  &__agreement {
     display: flex;
-    font-size: 24rpx;
-    align-items: center;
-    margin: 32rpx;
-    line-height: 40rpx;
-  }
+    align-items: flex-start;
+    justify-content: center;
+    padding: 0 16rpx;
 
-  &__others {
-    margin: 64rpx 32rpx auto 32rpx;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-
-    &-label {
-      min-width: 96rpx;
-      color: rgba(0, 0, 0, 0.6);
+    .agreement-text {
       font-size: 24rpx;
+      color: rgba(0, 0, 0, 0.6);
       line-height: 40rpx;
-    }
 
-    &-buttons {
-      flex: 1;
-      margin-left: 32rpx;
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-
-      .button {
-        margin: 0 !important;
-
-        &:not(:last-child) {
-          margin-right: 32rpx !important;
-        }
+      .link {
+        color: #0052d9;
       }
+    }
+  }
+
+  &__footer {
+    padding: 32rpx;
+    text-align: center;
+
+    .footer-text {
+      font-size: 22rpx;
+      color: rgba(0, 0, 0, 0.3);
     }
   }
 
@@ -75,17 +73,11 @@
   .radio-class {
     --td-radio-icon-size: 32rpx;
     --td-radio-label-line-height: 40rpx;
-
     align-items: center;
+    margin-right: 8rpx;
   }
 
   .radio-class-icon {
     margin-top: 0 !important;
-  }
-
-  .radio-class-label {
-    margin-left: 8rpx !important;
-    font-size: 24rpx !important;
-    line-height: 40rpx !important;
   }
 }

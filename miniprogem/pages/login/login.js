@@ -2,86 +2,103 @@ import request from '~/api/request';
 
 Page({
   data: {
-    phoneNumber: '',
-    isPhoneNumber: false,
     isCheck: false,
-    isSubmit: false,
-    isPasswordLogin: false,
-    passwordInfo: {
-      account: '',
-      password: '',
-    },
-    radioValue: '',
-  },
-
-  /* 自定义功能函数 */
-  changeSubmit() {
-    const canSubmit =
-      (this.data.isPasswordLogin
-        ? this.data.passwordInfo.account !== '' && this.data.passwordInfo.password !== ''
-        : this.data.isPhoneNumber) && this.data.isCheck;
-    this.setData({ isSubmit: canSubmit });
-  },
-
-  // 手机号变更
-  onPhoneInput(e) {
-    const isPhoneNumber = /^[1][3,4,5,7,8,9][0-9]{9}$/.test(e.detail.value);
-    this.setData({
-      isPhoneNumber,
-      phoneNumber: e.detail.value,
-    });
-    this.changeSubmit();
+    isLoading: false,
   },
 
   // 用户协议选择变更
   onCheckChange(e) {
     const { value } = e.detail;
     this.setData({
-      radioValue: value,
       isCheck: value === 'agree',
     });
-    this.changeSubmit();
   },
 
-  onAccountChange(e) {
-    this.setData({ passwordInfo: { ...this.data.passwordInfo, account: e.detail.value } });
-    this.changeSubmit();
-  },
+  // 微信一键登录
+  async wxLogin() {
+    if (!this.data.isCheck) {
+      wx.showToast({ title: '请先同意用户协议', icon: 'none' });
+      return;
+    }
 
-  onPasswordChange(e) {
-    this.setData({ passwordInfo: { ...this.data.passwordInfo, password: e.detail.value } });
-    this.changeSubmit();
-  },
+    if (this.data.isLoading) return;
+    this.setData({ isLoading: true });
 
-  // 切换登录方式
-  changeLogin() {
-    this.setData({ isPasswordLogin: !this.data.isPasswordLogin, isSubmit: false });
-  },
-
-  async login() {
-    if (!this.data.isSubmit) return;
-    wx.showLoading({ title: '登录中' });
     try {
-      // 简化：模拟 openid，真实环境可替换为 wx.login 拿 code 再换 openid
-      let openid = wx.getStorageSync('mock_openid');
-      if (!openid) {
-        openid = `mock-openid-${Date.now()}`;
-        wx.setStorageSync('mock_openid', openid);
-      }
-      const nickname = `用户${openid.slice(-4)}`;
-      const res = await request('/api/user/login', 'POST', {
-        openid,
-        nickname,
+      // 1. 调用 wx.login 获取 code
+      const loginRes = await new Promise((resolve, reject) => {
+        wx.login({
+          success: resolve,
+          fail: reject,
+        });
       });
+
+      const { code } = loginRes;
+      if (!code) {
+        throw new Error('获取登录凭证失败');
+      }
+
+      // 2. 尝试获取用户信息（可选，用户可能拒绝）
+      let nickname = '微信用户';
+      let avatar = '';
+
+      // 注意：wx.getUserProfile 需要用户主动点击触发
+      // 这里我们先用默认昵称，后续可以在个人中心让用户授权
+
+      // 3. 发送 code 到后端换取 token
+      const res = await request('/api/user/login', 'POST', {
+        code,
+        nickname,
+        avatar,
+      });
+
+      // 4. 存储登录信息
       wx.setStorageSync('access_token', res.token);
       wx.setStorageSync('user_info', res.user);
-      wx.switchTab({
-        url: `/pages/home/index`,
-      });
+
+      wx.showToast({ title: '登录成功', icon: 'success' });
+
+      // 5. 跳转到首页
+      setTimeout(() => {
+        wx.switchTab({ url: '/pages/home/index' });
+      }, 1000);
+
     } catch (e) {
+      console.error('登录失败:', e);
       wx.showToast({ title: e?.message || '登录失败', icon: 'none' });
     } finally {
-      wx.hideLoading();
+      this.setData({ isLoading: false });
+    }
+  },
+
+  // 获取用户信息并更新（授权头像昵称）
+  async getUserProfile() {
+    try {
+      const res = await new Promise((resolve, reject) => {
+        wx.getUserProfile({
+          desc: '用于完善用户资料',
+          success: resolve,
+          fail: reject,
+        });
+      });
+
+      const { nickName, avatarUrl } = res.userInfo;
+
+      // 更新用户信息到服务器
+      await request('/api/user/info', 'PUT', {
+        nickname: nickName,
+        avatar: avatarUrl,
+      });
+
+      // 更新本地存储
+      const userInfo = wx.getStorageSync('user_info') || {};
+      userInfo.nickname = nickName;
+      userInfo.avatar = avatarUrl;
+      wx.setStorageSync('user_info', userInfo);
+
+      wx.showToast({ title: '更新成功', icon: 'success' });
+    } catch (e) {
+      console.log('用户拒绝授权或授权失败');
     }
   },
 });

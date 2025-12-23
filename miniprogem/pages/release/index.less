@@ -10,6 +10,27 @@
   .box {
     width: 100%;
   }
+  .picker-row {
+    display: flex;
+    align-items: center;
+    padding: 24rpx 32rpx;
+    background: #fff;
+    .picker-label {
+      width: 160rpx;
+      font-size: 28rpx;
+      color: #333;
+    }
+    picker {
+      flex: 1;
+    }
+    .picker-value {
+      font-size: 28rpx;
+      color: #333;
+      &.placeholder {
+        color: #bbb;
+      }
+    }
+  }
   .upload {
     height: 112rpx * 2;
     position: relative;

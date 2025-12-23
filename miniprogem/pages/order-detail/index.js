@@ -1,5 +1,16 @@
 import request from '~/api/request';
 
+const STATUS_MAP = {
+  unpaid: { text: '待支付', theme: 'warning', bgColor: 'linear-gradient(135deg, #f39c12, #e67e22)' },
+  pending: { text: '待接单', theme: 'primary', bgColor: 'linear-gradient(135deg, #0052d9, #0066ff)' },
+  in_progress: { text: '服务中', theme: 'primary', bgColor: 'linear-gradient(135deg, #00b894, #00cec9)' },
+  waiting_confirm: { text: '待确认', theme: 'warning', bgColor: 'linear-gradient(135deg, #fdcb6e, #f39c12)' },
+  completed: { text: '已完成', theme: 'success', bgColor: 'linear-gradient(135deg, #27ae60, #2ecc71)' },
+  cancelled: { text: '已取消', theme: 'default', bgColor: 'linear-gradient(135deg, #636e72, #b2bec3)' },
+  aftersale: { text: '售后中', theme: 'danger', bgColor: 'linear-gradient(135deg, #e74c3c, #c0392b)' },
+  appealing: { text: '申诉中', theme: 'danger', bgColor: 'linear-gradient(135deg, #e74c3c, #c0392b)' },
+};
+
 Page({
   data: {
     id: '',
@@ -8,6 +19,9 @@ Page({
     loading: true,
     actions: [],
     submitting: false,
+    statusText: '',
+    statusTheme: 'default',
+    statusBgColor: 'linear-gradient(135deg, #0052d9, #0066ff)',
   },
 
   async onLoad(query) {
@@ -23,24 +37,61 @@ Page({
   async fetchData() {
     this.setData({ loading: true });
     try {
-      const user = await request('/api/user/info', 'GET');
-      const order = await request(`/api/order/${this.data.id}`, 'GET');
-      const role = user.currentRole || 'user';
-      const actions = this.computeActions(order, role);
-      this.setData({ order, role, actions, loading: false });
+      const { id } = this.data;
+      let role = 'user';
+
+      // 尝试获取用户信息以确定角色
+      try {
+        const user = await request('/api/user/info', 'GET');
+        role = user.currentRole || 'user';
+      } catch (e) {
+        // 未登录，保持用户角色
+      }
+
+      // 获取订单详情（API会自动判断是公开订单还是需要登录）
+      const order = await request(`/api/order/${id}`, 'GET');
+
+      // 只有pending状态（已支付待接单）的订单才是公开订单
+      const isPublicOrder = order.status === 'pending' && !order.workerId;
+      const actions = this.computeActions(order, role, isPublicOrder);
+      const statusInfo = STATUS_MAP[order.status] || {
+        text: order.status,
+        theme: 'default',
+        bgColor: 'linear-gradient(135deg, #0052d9, #0066ff)'
+      };
+      this.setData({
+        order,
+        role,
+        actions,
+        loading: false,
+        statusText: statusInfo.text,
+        statusTheme: statusInfo.theme,
+        statusBgColor: statusInfo.bgColor,
+      });
     } catch (e) {
       this.setData({ loading: false });
       wx.showToast({ title: e?.message || '加载失败', icon: 'none' });
     }
   },
 
-  computeActions(order, role) {
+  computeActions(order, role, isPublicOrder) {
     if (!order) return [];
     const status = order.status;
     const actions = [];
+
+    // 公开订单（待接单），只有兼职者可以接单
+    if (isPublicOrder) {
+      if (role === 'worker' && status === 'pending') {
+        actions.push({ key: 'take', text: '接单', theme: 'primary' });
+      }
+      return actions;
+    }
+
+    // 私有订单的操作
     if (role === 'user') {
-      if (status === 'consulting') {
-        actions.push({ key: 'ready', text: '请接单', theme: 'primary' });
+      // 允许取消的状态: unpaid, pending
+      if (status === 'unpaid' || status === 'pending') {
+        actions.push({ key: 'cancel', text: '取消订单', theme: 'default' });
       }
       if (status === 'waiting_confirm') {
         actions.push({ key: 'confirm', text: '确认完成', theme: 'primary' });
@@ -66,9 +117,9 @@ Page({
     this.setData({ submitting: true });
     try {
       const id = this.data.id;
-      if (key === 'ready') {
-        await request(`/api/order/${id}/ready`, 'POST');
-        wx.showToast({ title: '已发布请接单', icon: 'success' });
+      if (key === 'cancel') {
+        await request(`/api/order/${id}/cancel`, 'POST', { reason: '用户主动取消' });
+        wx.showToast({ title: '订单已取消', icon: 'success' });
       } else if (key === 'take') {
         await request(`/api/order/${id}/take`, 'POST');
         wx.showToast({ title: '接单成功', icon: 'success' });
@@ -98,6 +149,27 @@ Page({
     if (!this.data.id) return;
     wx.navigateTo({
       url: `/pages/chat/index?orderId=${this.data.id}`,
+    });
+  },
+
+  // 拨打电话
+  callPhone(e) {
+    const { phone } = e.currentTarget.dataset;
+    if (!phone) return;
+    wx.makePhoneCall({
+      phoneNumber: phone,
+      fail: () => {},
+    });
+  },
+
+  // 预览图片
+  previewImage(e) {
+    const { url } = e.currentTarget.dataset;
+    const { order } = this.data;
+    if (!url || !order?.images) return;
+    wx.previewImage({
+      current: url,
+      urls: order.images,
     });
   },
 });

@@ -21,13 +21,23 @@ enum WorkerStatus {
 
 enum OrderStatus {
   unpaid
-  consulting
   pending
   in_progress
   waiting_confirm
   completed
+  cancelled
   aftersale
   appealing
+}
+
+enum ServiceType {
+  delivery    // 代取快递
+  shopping    // 代购
+  printing    // 打印复印
+  tutoring    // 辅导答疑
+  errand      // 跑腿
+  cleaning    // 清洁服务
+  other       // 其他
 }
 
 enum MessageType {
@@ -143,20 +153,30 @@ model Address {
 
 model Order {
   id                 String       @id @default(cuid())
+  orderNo            String       @unique
   userId             String
   user               User         @relation("UserOrders", fields: [userId], references: [id])
   workerId           String?
   worker             Worker?      @relation("WorkerOrders", fields: [workerId], references: [id])
+  serviceType        ServiceType  @default(other)
   type               String
   description        String
   amount             Decimal
   status             OrderStatus  @default(unpaid)
   address            String
+  title              String?
+  expectedTime       String?
+  contactName        String?
+  contactPhone       String?
+  images             Json?
   paidAt             DateTime?
   readyAt            DateTime?
   takenAt            DateTime?
   serviceCompletedAt DateTime?
   confirmedAt        DateTime?
+  cancelledAt        DateTime?
+  cancelReason       String?
+  cancelledBy        String?
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
 
@@ -169,6 +189,8 @@ model Order {
   @@index([status])
   @@index([userId])
   @@index([workerId])
+  @@index([createdAt])
+  @@index([serviceType])
 }
 
 model Conversation {

@@ -2,9 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/request";
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const auth = requireUser(req);
   if (!auth.ok) return auth.response;
+
+  const { id } = await params;
 
   const worker = await prisma.worker.findUnique({
     where: { userId: auth.userId! },
@@ -18,47 +23,80 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ message: "兼职者未通过审核" }, { status: 400 });
   }
 
-  const order = await prisma.order.findUnique({ where: { id: params.id } });
-  if (!order) {
-    return NextResponse.json({ message: "订单不存在" }, { status: 404 });
+  if (!worker.isAccepting) {
+    return NextResponse.json({ message: "请先开启接单状态" }, { status: 400 });
   }
 
-  if (order.status !== "pending") {
-    return NextResponse.json({ message: "当前状态不可接单" }, { status: 400 });
-  }
-
-  if (order.workerId) {
-    return NextResponse.json({ message: "订单已被接单" }, { status: 400 });
-  }
-
-  const updated = await prisma.$transaction(async (tx) => {
-    const orderUpdated = await tx.order.update({
-      where: { id: params.id },
-      data: {
-        workerId: worker.id,
-        status: "in_progress",
-        takenAt: new Date(),
-      },
-    });
-
-    await tx.workerStats.upsert({
-      where: { workerId: worker.id },
-      update: {
-        acceptedCount: { increment: 1 },
-      },
-      create: {
-        workerId: worker.id,
-        acceptedCount: 1,
-        completedCount: 0,
-        positiveCount: 0,
-        negativeCount: 0,
-        totalIncome: 0,
-        totalWorkMinutes: 0,
-      },
-    });
-
-    return orderUpdated;
+  // 检查是否有进行中的订单
+  const ongoingOrder = await prisma.order.findFirst({
+    where: {
+      workerId: worker.id,
+      status: "in_progress",
+    },
   });
 
-  return NextResponse.json(updated);
+  if (ongoingOrder) {
+    return NextResponse.json(
+      { message: "您有正在进行的订单，请先完成后再接新单" },
+      { status: 400 }
+    );
+  }
+
+  // 使用事务+乐观锁防止并发接单
+  try {
+    const updated = await prisma.$transaction(async (tx) => {
+      // 在事务中再次检查订单状态，确保未被其他人接走
+      const order = await tx.order.findFirst({
+        where: {
+          id,
+          status: "pending",
+          workerId: null,
+        },
+      });
+
+      if (!order) {
+        throw new Error("ALREADY_TAKEN");
+      }
+
+      const orderUpdated = await tx.order.update({
+        where: { id },
+        data: {
+          workerId: worker.id,
+          status: "in_progress",
+          takenAt: new Date(),
+        },
+      });
+
+      await tx.workerStats.upsert({
+        where: { workerId: worker.id },
+        update: {
+          acceptedCount: { increment: 1 },
+        },
+        create: {
+          workerId: worker.id,
+          acceptedCount: 1,
+          completedCount: 0,
+          positiveCount: 0,
+          negativeCount: 0,
+          totalIncome: 0,
+          totalWorkMinutes: 0,
+        },
+      });
+
+      return orderUpdated;
+    });
+
+    return NextResponse.json({
+      id: updated.id,
+      orderNo: (updated as any).orderNo,
+      status: updated.status,
+      takenAt: updated.takenAt?.toISOString(),
+      message: "接单成功",
+    });
+  } catch (error: any) {
+    if (error.message === "ALREADY_TAKEN") {
+      return NextResponse.json({ message: "订单已被其他人接走" }, { status: 400 });
+    }
+    throw error;
+  }
 }

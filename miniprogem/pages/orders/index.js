@@ -3,11 +3,11 @@ import request from '~/api/request';
 const STATUS_TABS = [
   { label: '全部', value: 'all' },
   { label: '待支付', value: 'unpaid' },
-  { label: '待咨询', value: 'consulting' },
   { label: '待接单', value: 'pending' },
   { label: '服务中', value: 'in_progress' },
   { label: '待确认', value: 'waiting_confirm' },
   { label: '已完成', value: 'completed' },
+  { label: '已取消', value: 'cancelled' },
   { label: '售后中', value: 'aftersale' },
   { label: '申诉中', value: 'appealing' },
 ];
@@ -70,11 +70,11 @@ Page({
   statusTag(status) {
     const map = {
       unpaid: { text: '待支付', theme: 'warning' },
-      consulting: { text: '待咨询', theme: 'default' },
       pending: { text: '待接单', theme: 'primary' },
       in_progress: { text: '服务中', theme: 'primary' },
       waiting_confirm: { text: '待确认', theme: 'warning' },
       completed: { text: '已完成', theme: 'success' },
+      cancelled: { text: '已取消', theme: 'default' },
       aftersale: { text: '售后中', theme: 'danger' },
       appealing: { text: '申诉中', theme: 'danger' },
     };

@@ -1,52 +1,58 @@
 <nav nav-type="search" />
 <view class="home-container">
-  <view class="home-content">
-    <t-tabs defaultValue="recommend">
-      <t-tab-panel label="推荐" value="recommend">
-        <t-pull-down-refresh
-          value="{{enable}}"
-          bind:refresh="onRefresh"
-          loadingTexts="{{['下拉刷新', '松手刷新', '正在刷新', '刷新完成']}}"
-        >
-          <view class="home-card-list">
-            <t-swiper
-              list="{{swiperList}}"
-              navigation="{{ { type: 'dots-bar' } }}"
-              height="488rpx"
-              style="width: 340rpx"
-            />
-            <card
-              wx:for="{{cardInfo}}"
-              wx:key="index"
-              desc="{{item.desc}}"
-              url="{{item.url}}"
-              tags="{{item.tags}}"
-              id="{{item.id}}"
-              bind:cardtap="onCardTap"
-            />
-          </view>
-        </t-pull-down-refresh>
-      </t-tab-panel>
-      <t-tab-panel label="我的关注" value="follow">
-        <view class="home-card-list">
-          <card
-            wx:for="{{focusCardInfo}}"
-            wx:key="index"
-            desc="{{item.desc}}"
-            url="{{item.url}}"
-            tags="{{item.tags}}"
-            id="{{item.id}}"
-            bind:cardtap="onCardTap"
-          />
-        </view>
-      </t-tab-panel>
-    </t-tabs>
-  </view>
+  <!-- 服务类型筛选标签 -->
+  <scroll-view class="filter-bar" scroll-x enable-flex>
+    <view
+      wx:for="{{serviceTypes}}"
+      wx:key="value"
+      class="filter-tag {{selectedType === item.value ? 'filter-tag--active' : ''}}"
+      data-value="{{item.value}}"
+      bindtap="onTypeChange"
+    >
+      {{item.label}}
+    </view>
+  </scroll-view>
+
+  <!-- 主内容区 -->
+  <t-pull-down-refresh
+    value="{{refreshing}}"
+    bind:refresh="onRefresh"
+    loadingTexts="{{['下拉刷新', '松手刷新', '正在刷新', '刷新完成']}}"
+  >
+    <!-- 加载中 -->
+    <view wx:if="{{loading}}" class="loading-container">
+      <t-loading theme="circular" size="48rpx" text="加载中..." />
+    </view>
+
+    <!-- 空状态 -->
+    <view wx:elif="{{filteredOrders.length === 0}}" class="empty-container">
+      <t-empty icon="info-circle-filled" description="暂无待接单订单" />
+    </view>
+
+    <!-- 订单列表 -->
+    <view wx:else class="order-list">
+      <order-card
+        wx:for="{{filteredOrders}}"
+        wx:key="id"
+        order="{{item}}"
+        canTake="{{isWorker}}"
+        bind:cardtap="onCardTap"
+        bind:taketap="onTakeTap"
+      />
+    </view>
+  </t-pull-down-refresh>
 </view>
 
+<!-- 发布按钮 -->
 <view class="home-release">
   <t-button theme="primary" size="large" icon="add" shape="round" bindtap="goRelease">
     发布
   </t-button>
 </view>
+
+<!-- 角色提示 -->
+<view class="role-indicator {{isWorker ? 'role-indicator--worker' : ''}}">
+  <text>{{isWorker ? '兼职模式' : '用户模式'}}</text>
+</view>
+
 <t-message id="t-message" />

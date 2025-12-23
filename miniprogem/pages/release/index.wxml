@@ -2,7 +2,17 @@
 <view class="page">
   <view class="release-container">
     <view class="box">
-      <t-input label="服务类型" placeholder="如：跑腿/代取快递" value="{{form.type}}" bindchange="onTypeChange" />
+      <t-input label="标题" placeholder="简要标题，如：跑腿取件" value="{{form.title}}" bindchange="onTitleChange" />
+    </view>
+    <view class="box">
+      <view class="picker-row">
+        <text class="picker-label">服务类型</text>
+        <picker mode="selector" range="{{serviceTypes}}" range-key="label" value="{{serviceTypeIndex}}" bindchange="onServiceTypeChange">
+          <view class="picker-value {{serviceTypeIndex >= 0 ? '' : 'placeholder'}}">
+            {{serviceTypeIndex >= 0 ? serviceTypes[serviceTypeIndex].label : '请选择服务类型'}}
+          </view>
+        </picker>
+      </view>
     </view>
     <view class="box">
       <t-textarea
@@ -17,6 +27,15 @@
     </view>
     <view class="box">
       <t-input label="服务地址" placeholder="请输入地址" value="{{form.address}}" bindchange="onAddressChange" />
+    </view>
+    <view class="box">
+      <t-input label="期望时间" placeholder="如：明天 10:00-12:00" value="{{form.expectedTime}}" bindchange="onExpectedChange" />
+    </view>
+    <view class="box">
+      <t-input label="联系人" placeholder="联系人姓名" value="{{form.contactName}}" bindchange="onContactNameChange" />
+    </view>
+    <view class="box">
+      <t-input label="联系电话" placeholder="手机号" type="number" value="{{form.contactPhone}}" bindchange="onContactPhoneChange" />
     </view>
     <view class="box">
       <t-input label="金额(元)" placeholder="请输入金额" type="number" value="{{form.amount}}" bindchange="onAmountChange" />

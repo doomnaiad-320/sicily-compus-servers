@@ -18,7 +18,11 @@ export async function GET(req: NextRequest) {
     orderBy: { createdAt: "desc" },
     include: {
       user: true,
-      worker: true,
+      worker: {
+        include: {
+          user: true,
+        },
+      },
       review: true,
       afterSale: true,
       appeals: true,
@@ -28,10 +32,15 @@ export async function GET(req: NextRequest) {
   const plain = orders.map((o) => ({
     id: o.id,
     type: o.type,
+    title: o.title,
     description: o.description,
     status: o.status,
     amount: o.amount.toString(),
     address: o.address,
+    expectedTime: o.expectedTime,
+    contactName: o.contactName,
+    contactPhone: o.contactPhone,
+    images: (o.images as string[]) || [],
     createdAt: o.createdAt.toISOString(),
     updatedAt: o.updatedAt.toISOString(),
     user: o.user
@@ -46,6 +55,8 @@ export async function GET(req: NextRequest) {
       ? {
           id: o.worker.id,
           userId: o.worker.userId,
+          nickname: o.worker.user?.nickname,
+          phone: o.worker.user?.phone,
         }
       : null,
     review: o.review

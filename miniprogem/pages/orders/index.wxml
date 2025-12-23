@@ -22,7 +22,7 @@
     <t-cell
       wx:for="{{filteredList()}}"
       wx:key="id"
-      title="{{item.type}} · ¥{{item.amount}}"
+      title="{{item.title || item.type}} · ¥{{item.amount}}"
       description="{{item.description}}"
       note=""
       hover
@@ -31,7 +31,9 @@
     >
       <t-tag slot="note" size="small" theme="{{item.statusTag.theme}}" variant="light">{{item.statusTag.text}}</t-tag>
       <view slot="description" class="desc">
+        <text class="order-no" wx:if="{{item.orderNo}}">#{{item.orderNo}}</text>
         <text class="line">{{item.description}}</text>
+        <text class="line">期望：{{item.expectedTime || '未填'}}</text>
         <text class="time">{{item.createdAt}}</text>
       </view>
     </t-cell>

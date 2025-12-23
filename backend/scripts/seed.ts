@@ -1,7 +1,33 @@
 /* eslint-disable no-console */
-import { AppealStatus, AfterSaleStatus, OrderStatus, PrismaClient, WithdrawalStatus, WorkerStatus } from "@prisma/client";
+import { AppealStatus, AfterSaleStatus, OrderStatus, PrismaClient, ServiceType, WithdrawalStatus, WorkerStatus } from "@prisma/client";
 
 const prisma = new PrismaClient();
+
+// 生成订单编号
+function generateOrderNo(date: Date, seq: number): string {
+  const dateStr = date.toISOString().slice(0, 10).replace(/-/g, "");
+  return `CS${dateStr}${seq.toString().padStart(4, "0")}`;
+}
+
+const SERVICE_TYPES: ServiceType[] = [
+  ServiceType.delivery,
+  ServiceType.shopping,
+  ServiceType.printing,
+  ServiceType.tutoring,
+  ServiceType.errand,
+  ServiceType.cleaning,
+  ServiceType.other,
+];
+
+const SERVICE_TYPE_LABELS: Record<ServiceType, string> = {
+  [ServiceType.delivery]: "代取快递",
+  [ServiceType.shopping]: "代购",
+  [ServiceType.printing]: "打印复印",
+  [ServiceType.tutoring]: "辅导答疑",
+  [ServiceType.errand]: "跑腿",
+  [ServiceType.cleaning]: "清洁服务",
+  [ServiceType.other]: "其他",
+};
 
 async function main() {
   // 创建用户与地址（短 ID）
@@ -108,12 +134,10 @@ async function main() {
     OrderStatus.appealing,
   ];
 
-  // 创建订单（短 ID）
+  // 创建订单（短 ID）- 移除consulting状态，添加cancelled
   const statuses: OrderStatus[] = [
     OrderStatus.unpaid,
     OrderStatus.unpaid,
-    OrderStatus.consulting,
-    OrderStatus.consulting,
     OrderStatus.pending,
     OrderStatus.pending,
     OrderStatus.pending,
@@ -127,28 +151,39 @@ async function main() {
     OrderStatus.completed,
     OrderStatus.completed,
     OrderStatus.completed,
+    OrderStatus.cancelled,
+    OrderStatus.cancelled,
     OrderStatus.aftersale,
     OrderStatus.aftersale,
     OrderStatus.appealing,
   ];
 
   const orders = [];
+  const today = new Date();
   for (let i = 0; i < statuses.length; i++) {
     const status = statuses[i];
     const user = users[i % users.length];
     const worker = approvedWorkers[i % approvedWorkers.length];
     const needsWorker = workerNeededStatuses.includes(status);
     const id = `O${String(i + 1).padStart(3, "0")}`;
+    const serviceType = SERVICE_TYPES[i % SERVICE_TYPES.length];
     const order = await prisma.order.create({
       data: {
         id,
+        orderNo: generateOrderNo(today, i + 1),
         userId: user.id,
         workerId: needsWorker ? worker.id : null,
-        type: `服务类型${(i % 4) + 1}`,
+        serviceType,
+        type: SERVICE_TYPE_LABELS[serviceType],
+        title: `校园服务订单 ${i + 1}`,
         description: `测试订单描述 ${i + 1}`,
         amount: 20 + i * 5,
         status,
-        address: `测试地址${i + 1}`,
+        address: `测试地址${i + 1} 栋`,
+        expectedTime: `明天 ${9 + (i % 4)}:00-${10 + (i % 4)}:00`,
+        contactName: `联系人${i + 1}`,
+        contactPhone: `1380000${(200 + i).toString().slice(-3)}`,
+        images: [`/uploads/order-${i + 1}-1.png`, `/uploads/order-${i + 1}-2.png`],
         paidAt: status !== "unpaid" ? new Date() : null,
         readyAt: readyStatuses.includes(status)
           ? new Date()
@@ -158,6 +193,9 @@ async function main() {
           : null,
         serviceCompletedAt: serviceCompletedStatuses.includes(status) ? new Date() : null,
         confirmedAt: status === OrderStatus.completed ? new Date() : null,
+        cancelledAt: status === OrderStatus.cancelled ? new Date() : null,
+        cancelReason: status === OrderStatus.cancelled ? "用户主动取消" : null,
+        cancelledBy: status === OrderStatus.cancelled ? "user" : null,
       },
     });
     orders.push(order);

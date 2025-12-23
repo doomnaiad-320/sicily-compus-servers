@@ -6,12 +6,17 @@ import { adminFetch } from "@/lib/admin-client";
 type Order = {
   id: string;
   type: string;
+  title?: string;
   description: string;
   status: string;
   amount: string;
   user: { nickname: string; openid: string };
   worker?: { id: string; userId?: string };
   createdAt: string;
+  expectedTime?: string;
+  contactName?: string;
+  contactPhone?: string;
+  address?: string;
 };
 
 type OrderDetail = Order & {
@@ -20,6 +25,7 @@ type OrderDetail = Order & {
   afterSale?: { status: string; reason: string; result: string | null };
   appeals?: { id: string; status: string; reason: string; result: string | null }[];
   updatedAt?: string;
+  images?: string[];
 };
 
 const STATUS_OPTIONS = [
@@ -68,12 +74,17 @@ export default function AdminOrdersPage() {
     setDetail({
       id,
       type: "",
+      title: "",
       description: "",
       status: "",
       amount: "",
       address: "",
+      expectedTime: "",
+      contactName: "",
+      contactPhone: "",
       user: { nickname: "", openid: "" },
       createdAt: "",
+      images: [],
     });
     setDetailLoading(true);
     setDetailError("");
@@ -144,6 +155,7 @@ export default function AdminOrdersPage() {
               <th className="px-4 py-3">金额</th>
               <th className="px-4 py-3">用户</th>
               <th className="px-4 py-3">接单人</th>
+              <th className="px-4 py-3">期望时间</th>
               <th className="px-4 py-3">状态</th>
               <th className="px-4 py-3">创建时间</th>
               <th className="px-4 py-3 text-right">操作</th>
@@ -153,12 +165,24 @@ export default function AdminOrdersPage() {
             {paged.map((o) => (
               <tr key={o.id} className="border-t border-slate-100">
                 <td className="px-4 py-3">
-                  <div className="font-medium text-slate-900">{o.type}</div>
+                  <div className="font-medium text-slate-900">{o.title || o.type}</div>
                   <div className="text-xs text-slate-500 line-clamp-1">{o.description}</div>
+                  <div className="text-[11px] text-slate-400 mt-1">地址：{o.address || "-"}</div>
                 </td>
                 <td className="px-4 py-3">¥{o.amount}</td>
                 <td className="px-4 py-3">{o.user?.nickname || o.user?.openid}</td>
-                <td className="px-4 py-3">{o.worker?.id || "-"}</td>
+                <td className="px-4 py-3">
+                  {o.worker ? (
+                    <div className="space-y-0.5">
+                      <div className="text-slate-900">{o.worker.id}</div>
+                      <div className="text-xs text-slate-500">{o.worker.nickname || "-"}</div>
+                      <div className="text-[11px] text-slate-400">{o.worker.phone || "-"}</div>
+                    </div>
+                  ) : (
+                    "-"
+                  )}
+                </td>
+                <td className="px-4 py-3 text-xs text-slate-500">{o.expectedTime || "-"}</td>
                 <td className="px-4 py-3 capitalize">{o.status}</td>
                 <td className="px-4 py-3 text-xs text-slate-500">{o.createdAt}</td>
                 <td className="px-4 py-3 text-right">
@@ -200,29 +224,93 @@ export default function AdminOrdersPage() {
 
       {detail ? (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 px-4">
-          <div className="w-full max-w-3xl rounded-xl bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-              <div>
-                <h3 className="text-lg font-semibold text-slate-900">订单详情</h3>
-                <p className="text-xs text-slate-500">订单ID：{detail.id}</p>
+          <div className="w-full max-w-4xl rounded-2xl bg-white shadow-2xl ring-1 ring-slate-900/5">
+            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+              <div className="space-y-1">
+                <p className="text-xs uppercase tracking-wide text-slate-400">订单详情</p>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-xl font-semibold text-slate-900">{detail.title || detail.type}</h3>
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600">{detail.id}</span>
+                  <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs text-emerald-600 font-medium">
+                    ¥{detail.amount}
+                  </span>
+                  <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs text-indigo-600 capitalize">{detail.status}</span>
+                </div>
               </div>
-              <button className="text-slate-500 hover:text-slate-900" onClick={closeDetail}>
+              <button
+                className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-600 hover:bg-slate-200"
+                onClick={closeDetail}
+              >
                 关闭
               </button>
             </div>
 
-            <div className="max-h-[70vh] overflow-y-auto px-5 py-4 space-y-3 text-sm text-slate-700">
+            <div className="max-h-[70vh] overflow-y-auto px-6 py-5 space-y-4 text-sm text-slate-700">
               {detailError ? <p className="text-red-600">{detailError}</p> : null}
               {detailLoading ? <p className="text-slate-500">加载中...</p> : null}
-              <DetailRow label="类型" value={detail.type} />
-              <DetailRow label="描述" value={detail.description} />
-              <DetailRow label="金额" value={`¥${detail.amount}`} />
-              <DetailRow label="状态" value={detail.status} />
-              <DetailRow label="地址" value={detail.address} />
-              <DetailRow label="用户" value={detail.user?.nickname || detail.user?.openid} />
-              <DetailRow label="接单人" value={detail.worker?.id || "-"} />
-              <DetailRow label="创建时间" value={detail.createdAt} />
-              <DetailRow label="更新时间" value={detail.updatedAt || "-"} />
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <DetailCard label="类型" value={detail.type} />
+                <DetailCard label="状态" value={detail.status} />
+                <DetailCard label="金额" value={`¥${detail.amount}`} />
+                <DetailCard label="期望时间" value={detail.expectedTime} />
+                <DetailCard label="创建时间" value={detail.createdAt} />
+                <DetailCard label="更新时间" value={detail.updatedAt || "-"} />
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <InfoBlock title="地址" content={detail.address} />
+                <InfoBlock title="描述" content={detail.description} />
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-3">
+                <InfoBlock
+                  title="联系人"
+                  content={
+                    <>
+                      <p className="font-medium text-slate-900">{detail.contactName || "-"}</p>
+                      <p className="text-xs text-slate-500">{detail.contactPhone || "-"}</p>
+                    </>
+                  }
+                />
+                <InfoBlock
+                  title="下单用户"
+                  content={
+                    <>
+                      <p className="font-medium text-slate-900">{detail.user?.nickname || detail.user?.openid}</p>
+                      <p className="text-xs text-slate-500">{detail.user?.id}</p>
+                      <p className="text-xs text-slate-500">{detail.user?.phone || "-"}</p>
+                    </>
+                  }
+                />
+                <InfoBlock
+                  title="接单人"
+                  content={
+                    detail.worker ? (
+                      <>
+                        <p className="font-medium text-slate-900">{detail.worker.nickname || detail.worker.id}</p>
+                        <p className="text-xs text-slate-500">{detail.worker.id}</p>
+                        <p className="text-xs text-slate-500">{detail.worker.phone || "-"}</p>
+                      </>
+                    ) : (
+                      "-"
+                    )
+                  }
+                />
+              </div>
+
+              {detail.images && detail.images.length > 0 ? (
+                <div className="rounded-lg border border-slate-100 bg-slate-50 px-4 py-3 space-y-2">
+                  <p className="font-medium text-slate-900">附件图片</p>
+                  <div className="flex flex-wrap gap-2">
+                    {detail.images.map((img) => (
+                      <span key={img} className="rounded bg-white border border-slate-200 px-2 py-1 text-xs text-slate-600">
+                        {img}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
 
               {detail.review ? (
                 <div className="rounded-lg border border-slate-100 bg-slate-50 px-4 py-3">
@@ -266,6 +354,24 @@ function DetailRow({ label, value }: { label: string; value: string | number | u
     <div className="flex text-sm text-slate-700">
       <div className="w-24 text-slate-500">{label}</div>
       <div className="flex-1 text-slate-900">{value ?? "-"}</div>
+    </div>
+  );
+}
+
+function DetailCard({ label, value }: { label: string; value: string | number | undefined | null }) {
+  return (
+    <div className="rounded-lg border border-slate-100 bg-slate-50 px-4 py-3">
+      <p className="text-xs uppercase tracking-wide text-slate-500">{label}</p>
+      <p className="mt-1 text-sm text-slate-900">{value ?? "-"}</p>
+    </div>
+  );
+}
+
+function InfoBlock({ title, content }: { title: string; content: React.ReactNode }) {
+  return (
+    <div className="rounded-lg border border-slate-100 bg-white px-4 py-3 shadow-sm">
+      <p className="text-xs uppercase tracking-wide text-slate-500">{title}</p>
+      <div className="mt-1 text-sm text-slate-900 space-y-0.5">{content}</div>
     </div>
   );
 }

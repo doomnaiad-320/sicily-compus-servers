@@ -1,21 +1,96 @@
 <view class="order-detail">
-  <view wx:if="{{order}}">
-    <t-cell title="订单类型" note="{{order.type}}" />
-    <t-cell title="金额" note="¥{{order.amount}}" />
-    <t-cell title="状态" note="{{order.status}}" />
-    <t-cell title="地址" note="{{order.address}}" />
-    <t-cell title="描述" note="{{order.description}}" />
-    <t-cell title="创建时间" note="{{order.createdAt}}" />
-    <t-cell wx:if="{{order.worker}}" title="接单人" note="{{order.worker.userId || order.worker.id}}" />
+  <!-- 加载中 -->
+  <view wx:if="{{loading}}" class="loading-container">
+    <t-loading theme="circular" size="48rpx" text="加载中..." />
   </view>
-  <view wx:else class="empty">加载中或订单不存在</view>
 
-  <view class="actions">
+  <!-- 订单内容 -->
+  <view wx:elif="{{order}}" class="order-content">
+    <!-- 顶部状态卡片 -->
+    <view class="status-card" style="background: {{statusBgColor}};">
+      <view class="status-info">
+        <text class="status-text">{{statusText}}</text>
+        <text class="order-no">#{{order.orderNo || order.id}}</text>
+      </view>
+      <view class="amount-info">
+        <text class="amount-label">服务费用</text>
+        <text class="amount-value">¥{{order.amount}}</text>
+      </view>
+    </view>
+
+    <!-- 服务信息卡片 -->
+    <view class="info-card">
+      <view class="card-title">服务信息</view>
+      <view class="info-row">
+        <text class="info-label">服务类型</text>
+        <text class="info-value">{{order.type}}</text>
+      </view>
+      <view class="info-row" wx:if="{{order.title}}">
+        <text class="info-label">订单标题</text>
+        <text class="info-value">{{order.title}}</text>
+      </view>
+      <view class="info-row desc-row">
+        <text class="info-label">需求描述</text>
+        <text class="info-value desc-text">{{order.description}}</text>
+      </view>
+    </view>
+
+    <!-- 时间地点卡片 -->
+    <view class="info-card">
+      <view class="card-title">时间地点</view>
+      <view class="info-row">
+        <text class="info-icon">📍</text>
+        <text class="info-value flex-1">{{order.address}}</text>
+      </view>
+      <view class="info-row" wx:if="{{order.expectedTime}}">
+        <text class="info-icon">⏰</text>
+        <text class="info-value flex-1">{{order.expectedTime}}</text>
+      </view>
+    </view>
+
+    <!-- 联系信息卡片（非公开订单才显示） -->
+    <view class="info-card" wx:if="{{order.contactName || order.contactPhone}}">
+      <view class="card-title">联系方式</view>
+      <view class="info-row" wx:if="{{order.contactName}}">
+        <text class="info-icon">👤</text>
+        <text class="info-value flex-1">{{order.contactName}}</text>
+      </view>
+      <view class="info-row" wx:if="{{order.contactPhone}}">
+        <text class="info-icon">📞</text>
+        <text class="info-value flex-1">{{order.contactPhone}}</text>
+        <t-button size="extra-small" theme="primary" variant="outline" data-phone="{{order.contactPhone}}" bindtap="callPhone">拨打</t-button>
+      </view>
+    </view>
+
+    <!-- 图片展示 -->
+    <view class="info-card" wx:if="{{order.images && order.images.length > 0}}">
+      <view class="card-title">相关图片</view>
+      <view class="image-list">
+        <image
+          wx:for="{{order.images}}"
+          wx:key="index"
+          src="{{item}}"
+          mode="aspectFill"
+          class="order-image"
+          data-url="{{item}}"
+          bindtap="previewImage"
+        />
+      </view>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view wx:else class="empty-container">
+    <t-empty icon="info-circle-filled" description="订单不存在" />
+  </view>
+
+  <!-- 底部操作栏 -->
+  <view class="action-bar" wx:if="{{actions.length > 0}}">
     <t-button
       wx:for="{{actions}}"
       wx:key="key"
-      block
       theme="{{item.theme}}"
+      size="large"
       class="action-btn"
       data-key="{{item.key}}"
       loading="{{submitting}}"
@@ -23,6 +98,5 @@
     >
       {{item.text}}
     </t-button>
-    <t-button block variant="outline" theme="default" bindtap="goChat">进入聊天</t-button>
   </view>
 </view>
