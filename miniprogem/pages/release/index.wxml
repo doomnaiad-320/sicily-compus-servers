@@ -1,47 +1,198 @@
 <t-navbar title="发布订单" left-arrow />
-<view class="page">
-  <view class="release-container">
-    <view class="box">
-      <t-input label="标题" placeholder="简要标题，如：跑腿取件" value="{{form.title}}" bindchange="onTitleChange" />
+<view class="release-page">
+  <!-- 服务类型选择 -->
+  <view class="section">
+    <view class="section__title">选择服务类型</view>
+    <view class="picker-row" bindtap="toggleTypePicker">
+      <view class="picker-row__label">服务类型</view>
+      <view class="picker-row__value">
+        <text wx:if="{{form.type}}">{{form.type}}</text>
+        <text wx:else class="placeholder">请选择服务类型</text>
+      </view>
+      <t-icon name="chevron-down" size="36rpx" />
     </view>
-    <view class="box">
-      <view class="picker-row">
-        <text class="picker-label">服务类型</text>
-        <picker mode="selector" range="{{serviceTypes}}" range-key="label" value="{{serviceTypeIndex}}" bindchange="onServiceTypeChange">
-          <view class="picker-value {{serviceTypeIndex >= 0 ? '' : 'placeholder'}}">
-            {{serviceTypeIndex >= 0 ? serviceTypes[serviceTypeIndex].label : '请选择服务类型'}}
-          </view>
-        </picker>
+
+    <view wx:if="{{showTypeOptions}}" class="type-options">
+      <view
+        wx:for="{{serviceTypes}}"
+        wx:key="value"
+        class="type-option {{form.serviceType === item.value ? 'type-option--active' : ''}}"
+        data-index="{{index}}"
+        bindtap="onServiceTypeSelect"
+      >
+        <view class="type-option__icon" style="background: {{item.color}};">
+          <text>{{item.icon}}</text>
+        </view>
+        <view class="type-option__info">
+          <text class="type-option__label">{{item.label}}</text>
+          <text class="type-option__desc">{{item.desc || '适用于此类服务'}}</text>
+        </view>
+        <t-icon wx:if="{{form.serviceType === item.value}}" name="check" size="28rpx" color="#0052d9" />
       </view>
     </view>
-    <view class="box">
-      <t-textarea
-        t-class="desc-class"
-        t-class-textarea="placeholder-class"
-        placeholder="请输入服务描述"
-        maxlength="200"
-        value="{{form.description}}"
-        bindchange="onDescChange"
-        indicator
-      />
-    </view>
-    <view class="box">
-      <t-input label="服务地址" placeholder="请输入地址" value="{{form.address}}" bindchange="onAddressChange" />
-    </view>
-    <view class="box">
-      <t-input label="期望时间" placeholder="如：明天 10:00-12:00" value="{{form.expectedTime}}" bindchange="onExpectedChange" />
-    </view>
-    <view class="box">
-      <t-input label="联系人" placeholder="联系人姓名" value="{{form.contactName}}" bindchange="onContactNameChange" />
-    </view>
-    <view class="box">
-      <t-input label="联系电话" placeholder="手机号" type="number" value="{{form.contactPhone}}" bindchange="onContactPhoneChange" />
-    </view>
-    <view class="box">
-      <t-input label="金额(元)" placeholder="请输入金额" type="number" value="{{form.amount}}" bindchange="onAmountChange" />
-    </view>
-    <view class="btngroup box">
-      <t-button t-class="btn-class" theme="primary" icon="upload" content="提交并支付(模拟)" size="large" loading="{{submitting}}" bindtap="release"></t-button>
+  </view>
+
+  <!-- 订单信息 -->
+  <view class="section">
+    <view class="section__title">订单信息</view>
+    <view class="form-card">
+      <!-- 标题 -->
+      <view class="form-item">
+        <view class="form-item__label">
+          <text class="required">*</text>
+          <text>标题</text>
+        </view>
+        <input
+          class="form-item__input"
+          placeholder="简要描述，如：帮取菜鸟驿站快递"
+          value="{{form.title}}"
+          bindinput="onFieldChange"
+          data-field="title"
+          maxlength="30"
+        />
+      </view>
+
+      <!-- 详细描述 -->
+      <view class="form-item form-item--textarea">
+        <view class="form-item__label">
+          <text class="required">*</text>
+          <text>详细描述</text>
+        </view>
+        <textarea
+          class="form-item__textarea"
+          placeholder="请详细描述您的需求，如：取件码、物品大小、注意事项等"
+          value="{{form.description}}"
+          bindinput="onFieldChange"
+          data-field="description"
+          maxlength="500"
+        />
+        <view class="form-item__count">{{form.description.length || 0}}/500</view>
+      </view>
     </view>
   </view>
+
+  <!-- 服务地址 -->
+  <view class="section">
+    <view class="section__title">服务地址</view>
+    <view class="form-card">
+      <view class="form-item form-item--textarea">
+        <view class="form-item__label">
+          <text class="required">*</text>
+          <text>详细地址</text>
+        </view>
+        <textarea
+          class="form-item__textarea form-item__textarea--short"
+          placeholder="请输入详细地址，如：XX大学 X号楼 X室"
+          value="{{form.address}}"
+          bindinput="onFieldChange"
+          data-field="address"
+          maxlength="100"
+        />
+      </view>
+    </view>
+  </view>
+
+  <!-- 时间与联系方式 -->
+  <view class="section">
+    <view class="section__title">时间与联系方式</view>
+    <view class="form-card">
+      <!-- 期望时间 -->
+      <view class="form-item">
+        <view class="form-item__label">
+          <text>⏰</text>
+          <text>期望时间</text>
+        </view>
+        <view class="time-picker-group">
+          <picker mode="date" value="{{form.expectedDate}}" bindchange="onDateChange" start="{{today}}" end="">
+            <view class="picker-display {{form.expectedDate ? '' : 'picker-display--placeholder'}}">
+              {{form.expectedDate || '选择日期'}}
+            </view>
+          </picker>
+          <picker mode="time" value="{{form.expectedTime}}" bindchange="onTimeChange">
+            <view class="picker-display picker-display--tight {{form.expectedTime ? '' : 'picker-display--placeholder'}}">
+              {{form.expectedTime || '请选择时间'}}
+            </view>
+          </picker>
+        </view>
+      </view>
+
+      <!-- 联系人 -->
+      <view class="form-item">
+        <view class="form-item__label">
+          <text>👤</text>
+          <text>联系人</text>
+        </view>
+        <input
+          class="form-item__input"
+          placeholder="您的称呼"
+          value="{{form.contactName}}"
+          bindinput="onFieldChange"
+          data-field="contactName"
+        />
+      </view>
+
+      <!-- 联系电话 -->
+      <view class="form-item">
+        <view class="form-item__label">
+          <text>📱</text>
+          <text>联系电话</text>
+        </view>
+        <input
+          class="form-item__input"
+          placeholder="方便兼职者联系您"
+          type="number"
+          value="{{form.contactPhone}}"
+          bindinput="onFieldChange"
+          data-field="contactPhone"
+          maxlength="11"
+        />
+      </view>
+    </view>
+  </view>
+
+  <!-- 服务报酬 -->
+  <view class="section">
+    <view class="section__title">服务报酬</view>
+    <view class="form-card">
+      <view class="amount-input">
+        <text class="amount-input__symbol">¥</text>
+        <input
+          class="amount-input__field"
+          type="digit"
+          placeholder="0.00"
+          value="{{form.amount}}"
+          bindinput="onFieldChange"
+          data-field="amount"
+          cursor-spacing="32"
+          adjust-position="true"
+          maxlength="8"
+          focus="{{amountFocus}}"
+          bindtap="onAmountTap"
+          bindblur="onAmountBlur"
+        />
+      </view>
+      <view class="amount-tips">
+        <view class="amount-tip">💡 建议根据服务难度合理定价</view>
+        <view class="amount-tip">📍 跑腿取件通常 3-10 元</view>
+        <view class="amount-tip">🛒 代购物品通常 5-15 元</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 占位，避免被底部按钮遮挡 -->
+  <view class="bottom-placeholder"></view>
 </view>
+
+<!-- 底部提交栏 -->
+<view class="submit-bar">
+  <view class="submit-bar__info">
+    <text class="submit-bar__label">服务费用</text>
+    <text class="submit-bar__amount">¥{{form.amount || '0.00'}}</text>
+  </view>
+  <view class="submit-bar__btn {{canSubmit ? '' : 'submit-bar__btn--disabled'}}" bindtap="release">
+    <t-loading wx:if="{{submitting}}" theme="circular" size="36rpx" color="#fff" />
+    <text wx:else>发布订单</text>
+  </view>
+</view>
+
+<t-message id="t-message" />
