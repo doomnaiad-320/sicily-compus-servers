@@ -24,10 +24,6 @@ Component({
       type: Object,
       value: {},
     },
-    canTake: {
-      type: Boolean,
-      value: false,
-    },
   },
 
   data: {
@@ -47,11 +43,6 @@ Component({
   methods: {
     onCardTap() {
       this.triggerEvent("cardtap", { id: this.data.order.id });
-    },
-
-    onTakeTap(e) {
-      e.stopPropagation();
-      this.triggerEvent("taketap", { id: this.data.order.id });
     },
   },
 });

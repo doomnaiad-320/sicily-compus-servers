@@ -24,7 +24,11 @@ export async function POST(
   }
 
   if (!worker.isAccepting) {
-    return NextResponse.json({ message: "请先开启接单状态" }, { status: 400 });
+    // 自动开启接单状态，避免因未切换开关导致无法接单
+    await prisma.worker.update({
+      where: { id: worker.id },
+      data: { isAccepting: true },
+    });
   }
 
   // 检查是否有进行中的订单

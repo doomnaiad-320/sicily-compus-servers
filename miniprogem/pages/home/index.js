@@ -191,30 +191,6 @@ Page({
   },
 
   // 点击接单按钮
-  async onTakeTap(e) {
-    const { id } = e.detail || {};
-    if (!id) return;
-
-    // 检查是否是兼职者
-    if (!this.data.isWorker) {
-      Message.warning({ context: this, content: "只有兼职者才能接单" });
-      return;
-    }
-
-    try {
-      await request(`/api/order/${id}/take`, "POST");
-      Message.success({ context: this, content: "接单成功!" });
-      // 刷新订单列表
-      this.loadOrders();
-      // 跳转到订单详情
-      wx.navigateTo({
-        url: `/pages/order-detail/index?id=${id}`,
-      });
-    } catch (e) {
-      Message.error({ context: this, content: e?.message || "接单失败" });
-    }
-  },
-
   // 跳转发布页
   goRelease() {
     wx.navigateTo({

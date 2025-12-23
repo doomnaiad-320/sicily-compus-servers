@@ -1,9 +1,19 @@
 import request from '~/api/request';
 
-const STATUS_TABS = [
+// 用户模式的状态tabs
+const USER_STATUS_TABS = [
   { label: '全部', value: 'all' },
   { label: '待支付', value: 'unpaid' },
   { label: '待接单', value: 'pending' },
+  { label: '服务中', value: 'in_progress' },
+  { label: '待确认', value: 'waiting_confirm' },
+  { label: '已完成', value: 'completed' },
+  { label: '已取消', value: 'cancelled' },
+];
+
+// 兼职者模式的状态tabs
+const WORKER_STATUS_TABS = [
+  { label: '全部', value: 'all' },
   { label: '服务中', value: 'in_progress' },
   { label: '待确认', value: 'waiting_confirm' },
   { label: '已完成', value: 'completed' },
@@ -19,7 +29,7 @@ Page({
     displayList: [], // 用于展示的筛选后列表
     view: 'mine', // mine | available (worker only)
     loading: true,
-    statusTabs: STATUS_TABS, // 传递给模板
+    statusTabs: USER_STATUS_TABS, // 传递给模板
   },
 
   onShow() {
@@ -34,21 +44,21 @@ Page({
       let primary = [];
       let available = [];
       if (role === 'worker') {
-        const [workerOrders, userOrders, availableOrders] = await Promise.all([
+        // 兼职者模式：只显示接的订单
+        [primary, available] = await Promise.all([
           request('/api/order?role=worker', 'GET'),
-          // 以用户身份发布的订单也要带上
-          request('/api/order?role=user', 'GET'),
           request('/api/order?role=worker&view=available', 'GET'),
         ]);
-        primary = this.mergeOrders(workerOrders, userOrders);
-        available = availableOrders;
       } else {
+        // 用户模式：只显示发布的订单
         primary = await request('/api/order', 'GET');
       }
       this.setData({
         role,
         list: primary,
         available,
+        statusTabs: role === 'worker' ? WORKER_STATUS_TABS : USER_STATUS_TABS,
+        current: 'all', // 切换角色时重置为全部
         loading: false,
       });
       this.updateDisplayList();
@@ -56,17 +66,6 @@ Page({
       this.setData({ loading: false });
       wx.showToast({ title: e?.message || '加载失败', icon: 'none' });
     }
-  },
-
-  // 合并订单去重
-  mergeOrders(...lists) {
-    const map = {};
-    (lists || []).forEach((list) => {
-      (list || []).forEach((item) => {
-        map[item.id] = item;
-      });
-    });
-    return Object.values(map);
   },
 
   onTabChange(e) {

@@ -154,14 +154,9 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(orders.map(serializeOrder));
     }
 
-    // 我的订单：包含自己接的订单 + 自己发布的订单
+    // 我的订单：只显示自己接的订单（兼职者视角）
     const orders = await prisma.order.findMany({
-      where: {
-        OR: [
-          { workerId: worker.id }, // 自己接的订单
-          { userId: auth.userId! }, // 自己发布的订单
-        ],
-      },
+      where: { workerId: worker.id },
       orderBy: { updatedAt: "desc" },
     });
     return NextResponse.json(orders.map(serializeOrder));
