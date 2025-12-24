@@ -14,8 +14,6 @@ backend/out/
 backend/.vercel/
 backend/.npm-cache/
 backend/.cache/
-backend/prisma/*.db
-backend/prisma/prisma/*.db
 
 .env
 .env.*
