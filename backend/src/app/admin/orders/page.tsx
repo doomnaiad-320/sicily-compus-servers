@@ -165,6 +165,12 @@ export default function AdminOrdersPage() {
     if (o.status === "cancelled" && o.cancelReason?.includes("关闭")) return "已关闭";
     return statusLabel(o.status);
   };
+  const shortWorkerId = (w?: { id?: string; userId?: string | null }) => {
+    if (!w) return "-";
+    if (w.userId) return w.userId;
+    if (w.id) return `w${w.id.slice(-6)}`;
+    return "-";
+  };
 
   const cancelOrder = async () => {
     if (!detail) return;
@@ -261,7 +267,7 @@ export default function AdminOrdersPage() {
                 <td className="px-4 py-3">
                   {o.worker ? (
                     <div className="space-y-0.5">
-                      <div className="text-slate-900">{o.worker.id}</div>
+                      <div className="text-slate-900">{shortWorkerId(o.worker)}</div>
                       <div className="text-xs text-slate-500">{o.worker.nickname || "-"}</div>
                       <div className="text-[11px] text-slate-400">{o.worker.phone || "-"}</div>
                     </div>
@@ -409,8 +415,8 @@ export default function AdminOrdersPage() {
                     content={
                       detail.worker ? (
                         <>
-                          <p className="font-medium text-slate-900">{detail.worker.nickname || detail.worker.id}</p>
-                          <p className="text-xs text-slate-500">{detail.worker.id}</p>
+                          <p className="font-medium text-slate-900">{detail.worker.nickname || shortWorkerId(detail.worker)}</p>
+                          <p className="text-xs text-slate-500">{shortWorkerId(detail.worker)}</p>
                           <p className="text-xs text-slate-500">{detail.worker.phone || "-"}</p>
                         </>
                       ) : (
