@@ -14,7 +14,6 @@ backend/out/
 backend/.vercel/
 backend/.npm-cache/
 backend/.cache/
-
-.env
-.env.*
-!.env.example
+backend/.env
+backend/.env.example
+*.md
