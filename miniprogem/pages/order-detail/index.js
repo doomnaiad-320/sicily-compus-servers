@@ -151,13 +151,13 @@ Page({
 
   computeActions(order, user, isPublicOrder) {
     if (!order) return [];
-    const { role, isWorker } = user;
+    const { role } = user;
     const status = order.status;
     const actions = [];
 
-    // 公开订单（待接单），只有兼职者可以接单
+    // 公开订单（待接单），只有兼职者模式可以接单
     if (isPublicOrder) {
-      if (isWorker && status === "pending") {
+      if (role === "worker" && status === "pending") {
         actions.push({ key: "take", text: "接单", theme: "primary" });
       }
       return actions;
@@ -176,7 +176,7 @@ Page({
       if (status === "completed" && !order.review) {
         actions.push({ key: "review", text: "去评价", theme: "primary" });
       }
-    } else if (isWorker) {
+    } else if (role === "worker") {
       if (status === "pending") {
         actions.push({ key: "take", text: "接单", theme: "primary" });
       }
@@ -188,8 +188,8 @@ Page({
     const { key } = e.currentTarget.dataset;
     if (!key || this.data.submitting) return;
 
-    if (key === "take" && !this.data.isWorker) {
-      wx.showToast({ title: "只有兼职者可以接单", icon: "none" });
+    if (key === "take" && this.data.role !== "worker") {
+      wx.showToast({ title: "请切换到兼职者模式接单", icon: "none" });
       return;
     }
 
