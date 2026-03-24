@@ -35,10 +35,11 @@ Page({
       const prev = this.data.messageList || [];
       const mapped = (list || []).map((c) => {
         const prevItem = prev.find((p) => p.conversationId === c.id);
+        const orderSuffix = c.orderId ? ` · 订单 ${c.orderId.slice(-4)}` : "";
         return {
           conversationId: c.id,
           orderId: c.orderId,
-          title: c.orderId ? `订单 ${c.orderId.slice(-4)}` : '会话',
+          title: `${c.counterpartName || '会话'}${orderSuffix}`,
           lastContent: c.lastMessage?.content || '暂无消息',
           lastTime: c.lastMessage?.createdAt || c.updatedAt,
           badge: prevItem?.badge || 0,

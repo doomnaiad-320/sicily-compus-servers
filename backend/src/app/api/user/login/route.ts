@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { signUserToken } from "@/lib/auth";
+import {
+  buildMissingEnvMessage,
+  getMissingEnv,
+  logMissingEnv,
+} from "@/lib/env";
 
 const WECHAT_APPID = process.env.WECHAT_APPID || "";
 const WECHAT_SECRET = process.env.WECHAT_SECRET || "";
@@ -52,9 +57,17 @@ export async function POST(req: NextRequest) {
 
   // 优先使用code换取openid（生产环境）
   if (code) {
-    if (!WECHAT_APPID || !WECHAT_SECRET) {
+    const missingWechatEnv = getMissingEnv(["WECHAT_APPID", "WECHAT_SECRET"]);
+    if (missingWechatEnv.length > 0) {
+      logMissingEnv("/api/user/login", missingWechatEnv);
       return NextResponse.json(
-        { message: "微信配置缺失，请联系管理员" },
+        {
+          message:
+            buildMissingEnvMessage(
+              missingWechatEnv,
+              "微信配置缺失，请联系管理员"
+            ) || "微信配置缺失，请联系管理员",
+        },
         { status: 500 }
       );
     }
@@ -77,6 +90,21 @@ export async function POST(req: NextRequest) {
 
   if (!openid) {
     return NextResponse.json({ message: "缺少登录凭证" }, { status: 400 });
+  }
+
+  const missingJwtEnv = getMissingEnv(["JWT_SECRET"]);
+  if (missingJwtEnv.length > 0) {
+    logMissingEnv("/api/user/login", missingJwtEnv);
+    return NextResponse.json(
+      {
+        message:
+          buildMissingEnvMessage(
+            missingJwtEnv,
+            "登录配置缺失，请联系管理员"
+          ) || "登录配置缺失，请联系管理员",
+      },
+      { status: 500 }
+    );
   }
 
   // 先查找是否已存在用户

@@ -29,8 +29,17 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       review: true,
       afterSale: true,
       appeals: true,
-      conversation: {
-        include: { messages: { orderBy: { createdAt: "desc" }, take: 10 } },
+      conversations: {
+        orderBy: { updatedAt: "desc" },
+        include: {
+          user: true,
+          worker: {
+            include: {
+              user: true,
+            },
+          },
+          messages: { orderBy: { createdAt: "desc" }, take: 10 },
+        },
       },
     },
   });
@@ -91,20 +100,20 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       reason: a.reason,
       result: a.result,
     })),
-    conversation: order.conversation
-      ? {
-          id: order.conversation.id,
-          messages: order.conversation.messages.map((m) => ({
-            id: m.id,
-            senderId: m.senderId,
-            receiverId: m.receiverId,
-            content: m.content,
-            messageType: m.messageType,
-            actionType: m.actionType,
-            createdAt: m.createdAt.toISOString(),
-          })),
-        }
-      : null,
+    conversations: order.conversations.map((conversation) => ({
+      id: conversation.id,
+      userNickname: conversation.user.nickname,
+      workerNickname: conversation.worker.user?.nickname || null,
+      messages: conversation.messages.map((m) => ({
+        id: m.id,
+        senderId: m.senderId,
+        receiverId: m.receiverId,
+        content: m.content,
+        messageType: m.messageType,
+        actionType: m.actionType,
+        createdAt: m.createdAt.toISOString(),
+      })),
+    })),
   };
 
   return NextResponse.json(plain);

@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/request";
+import {
+  getConversationForUser,
+  resolveOrderConversationForUser,
+} from "@/lib/conversation";
 
 type MessageType = "text" | "action";
 type ActionType =
@@ -33,60 +37,34 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: "动作消息必须提供 actionType" }, { status: 400 });
   }
 
-  // Resolve conversation and participants
-  const conversation = conversationId
-    ? await prisma.conversation.findUnique({
-        where: { id: conversationId },
-        include: { worker: { select: { userId: true } } },
-      })
+  let conv = conversationId
+    ? await getConversationForUser(conversationId, auth.userId!)
     : null;
-
-  let conv = conversation;
 
   if (!conv) {
     if (!orderId) {
       return NextResponse.json({ message: "缺少 conversationId 或 orderId" }, { status: 400 });
     }
-    const order = await prisma.order.findUnique({
-      where: { id: orderId },
-      include: { worker: true },
-    });
-    if (!order || !order.workerId || (order.userId !== auth.userId && order.worker?.userId !== auth.userId)) {
-      return NextResponse.json({ message: "订单不存在或无权限" }, { status: 404 });
+    const resolved = await resolveOrderConversationForUser(orderId, auth.userId!);
+    if (!resolved.ok) {
+      return NextResponse.json(
+        { message: resolved.message },
+        { status: resolved.status }
+      );
     }
-
-    const workerUserId = order.worker?.userId as string;
-    conv = await prisma.conversation.upsert({
-      where: { orderId },
-      update: {},
-      create: {
-        orderId,
-        userId: order.userId,
-        workerId: order.workerId,
-      },
-      include: { worker: { select: { userId: true } } },
-    });
-
-    if (conv.userId !== auth.userId && workerUserId !== auth.userId) {
-      return NextResponse.json({ message: "无权限" }, { status: 403 });
-    }
-  } else {
-    const workerUserId = conv.worker?.userId;
-    if (conv.userId !== auth.userId && workerUserId !== auth.userId) {
-      return NextResponse.json({ message: "会话不存在或无权限" }, { status: 404 });
-    }
+    conv = resolved.conversation;
   }
 
-  const workerUserId = conv.worker?.userId as string;
+  const workerUserId = conv.worker.userId;
   const receiverId = auth.userId === conv.userId ? workerUserId : conv.userId;
 
   const message = await prisma.$transaction(async (tx) => {
     const created = await tx.message.create({
       data: {
-        conversationId: conv!.id,
+        conversationId: conv.id,
         senderId: auth.userId!,
         receiverId,
-        orderId: conv!.orderId || null,
+        orderId: conv.orderId || null,
         content,
         messageType: type,
         actionType: actionType || null,
@@ -94,7 +72,7 @@ export async function POST(req: NextRequest) {
     });
 
     await tx.conversation.update({
-      where: { id: conv!.id },
+      where: { id: conv.id },
       data: { updatedAt: new Date() },
     });
 

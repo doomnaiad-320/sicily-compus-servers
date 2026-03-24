@@ -6,10 +6,14 @@ function isAdmin(req: NextRequest) {
   return req.headers.get("x-user-role") === "admin";
 }
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const auth = requireUser(req);
   if (!auth.ok) return auth.response;
   if (!isAdmin(req)) return NextResponse.json({ message: "仅管理员可操作" }, { status: 403 });
+  const { id } = await params;
 
   const body = await req.json().catch(() => ({}));
   const { decision, reason } = body as { decision?: "approve" | "reject"; reason?: string };
@@ -19,7 +23,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   }
 
   const withdrawal = await prisma.withdrawal.findUnique({
-    where: { id: params.id },
+    where: { id },
   });
 
   if (!withdrawal) {
@@ -40,7 +44,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     }
 
     const w = await tx.withdrawal.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         status,
         processedAt: new Date(),
@@ -50,7 +54,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     await tx.adminAudit.create({
       data: {
         type: "withdrawal",
-        targetId: params.id,
+        targetId: id,
         action: decision === "approve" ? "approve" : "reject",
         reason: reason || "",
       },

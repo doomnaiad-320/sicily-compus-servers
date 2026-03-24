@@ -1,5 +1,6 @@
 import request from "~/api/request";
 import config from "~/config";
+import { formatMonthDayTime } from "~/utils/date";
 
 const STATUS_MAP = {
   unpaid: {
@@ -54,6 +55,9 @@ Page({
     workerId: "",
     loading: true,
     actions: [],
+    chatEntry: null,
+    contactDisplayName: "",
+    contactDisplayPhone: "",
     submitting: false,
     uploading: false,
     statusText: "",
@@ -108,7 +112,16 @@ Page({
       }
 
       // 获取订单详情（API会自动判断是公开订单还是需要登录）
-      const order = await request(`/api/order/${id}`, "GET");
+      const rawOrder = await request(`/api/order/${id}`, "GET");
+      const order = {
+        ...rawOrder,
+        expectedTime: rawOrder.expectedTime
+          ? formatMonthDayTime(rawOrder.expectedTime)
+          : "",
+        deliveredAt: rawOrder.deliveredAt
+          ? formatMonthDayTime(rawOrder.deliveredAt)
+          : "",
+      };
 
       // 只有pending状态（已支付待接单）的订单才是公开订单
       const isPublicOrder = order.status === "pending" && !order.workerId;
@@ -118,9 +131,14 @@ Page({
         workerId &&
         order.workerId === workerId &&
         order.status === "in_progress";
+      const chatEntry = this.computeChatEntry(
+        order,
+        { role, isWorker, userId, workerId },
+        isPublicOrder,
+      );
       const actions = this.computeActions(
         order,
-        { role, isWorker },
+        { role, isWorker, userId, workerId },
         isPublicOrder,
       );
       const statusInfo = STATUS_MAP[order.status] || {
@@ -135,6 +153,9 @@ Page({
         userId,
         workerId,
         actions,
+        chatEntry,
+        contactDisplayName: chatEntry?.targetName || order.contactName || "",
+        contactDisplayPhone: chatEntry?.hidePhone ? "" : (order.contactPhone || ""),
         loading: false,
         statusText: statusInfo.text,
         statusTheme: statusInfo.theme,
@@ -149,22 +170,51 @@ Page({
     }
   },
 
+  computeChatEntry(order, user, isPublicOrder) {
+    if (!order) return null;
+    const { role, isWorker, userId, workerId } = user;
+    const isOwner = !!userId && order.userId === userId;
+    const isAssignedWorker = !!workerId && !!order.workerId && order.workerId === workerId;
+    const canPrivateChat =
+      !!userId &&
+      (
+        (isPublicOrder && role === "worker" && isWorker && !isOwner) ||
+        (!!order.workerId && (isOwner || isAssignedWorker))
+      );
+
+    if (!canPrivateChat) {
+      return null;
+    }
+
+    const talkingToWorker = !!order.workerId && isOwner;
+
+    return {
+      text: "私信",
+      targetName: talkingToWorker
+        ? order.workerNickname || "接单人"
+        : order.userNickname || order.contactName || "发布者",
+      hidePhone: talkingToWorker,
+    };
+  },
+
   computeActions(order, user, isPublicOrder) {
     if (!order) return [];
-    const { role } = user;
+    const { role, userId, workerId } = user;
     const status = order.status;
     const actions = [];
+    const isOwner = !!userId && order.userId === userId;
+    const isAssignedWorker = !!workerId && !!order.workerId && order.workerId === workerId;
 
     // 公开订单（待接单），只有兼职者模式可以接单
     if (isPublicOrder) {
-      if (role === "worker" && status === "pending") {
+      if (role === "worker" && status === "pending" && !isOwner) {
         actions.push({ key: "take", text: "接单", theme: "primary" });
       }
       return actions;
     }
 
     // 私有订单的操作
-    if (role === "user") {
+    if (isOwner) {
       // 允许取消的状态: unpaid, pending
       if (status === "unpaid" || status === "pending") {
         actions.push({ key: "cancel", text: "取消订单", theme: "default" });
@@ -176,7 +226,7 @@ Page({
       if (status === "completed" && !order.review) {
         actions.push({ key: "review", text: "去评价", theme: "primary" });
       }
-    } else if (role === "worker") {
+    } else if (isAssignedWorker || role === "worker") {
       if (status === "pending") {
         actions.push({ key: "take", text: "接单", theme: "primary" });
       }
@@ -233,6 +283,10 @@ Page({
     wx.navigateTo({
       url: `/pages/chat/index?orderId=${this.data.id}`,
     });
+  },
+
+  onChatTap() {
+    this.goChat();
   },
 
   // 拨打电话

@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="980" viewBox="0 0 1600 980">
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f8fbff"/>
+      <stop offset="100%" stop-color="#eef4ff"/>
+    </linearGradient>
+    <linearGradient id="panelGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f6f9ff"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#1f2a44" flood-opacity="0.12"/>
+    </filter>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="strokeWidth">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#3d5af1"/>
+    </marker>
+    <style>
+      .title { font: 700 34px "PingFang SC", "Microsoft YaHei", sans-serif; fill: #15233b; }
+      .subtitle { font: 500 16px "PingFang SC", "Microsoft YaHei", sans-serif; fill: #4e5f7d; }
+      .section { font: 700 22px "PingFang SC", "Microsoft YaHei", sans-serif; fill: #223a5e; }
+      .boxTitle { font: 700 18px "PingFang SC", "Microsoft YaHei", sans-serif; fill: #1e3558; }
+      .boxText { font: 500 14px "PingFang SC", "Microsoft YaHei", sans-serif; fill: #415577; }
+      .small { font: 500 13px "PingFang SC", "Microsoft YaHei", sans-serif; fill: #5f7294; }
+      .panel { fill: url(#panelGrad); stroke: #c9d7f3; stroke-width: 1.4; rx: 18; }
+      .boxBlue { fill: #eef4ff; stroke: #a8c1ff; stroke-width: 1.3; rx: 14; }
+      .boxGreen { fill: #ecfbf4; stroke: #9fdabf; stroke-width: 1.3; rx: 14; }
+      .boxOrange { fill: #fff6e9; stroke: #f2c88f; stroke-width: 1.3; rx: 14; }
+      .boxPurple { fill: #f5f0ff; stroke: #cdb6ff; stroke-width: 1.3; rx: 14; }
+      .flow { stroke: #3d5af1; stroke-width: 2.4; fill: none; marker-end: url(#arrow); }
+      .flowDashed { stroke: #5f7294; stroke-width: 2; fill: none; stroke-dasharray: 7 6; marker-end: url(#arrow); }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1600" height="980" fill="url(#bgGrad)"/>
+
+  <text x="800" y="62" text-anchor="middle" class="title">校园跑图服务平台 架构图（中文）</text>
+  <text x="800" y="90" text-anchor="middle" class="subtitle">覆盖：微信小程序端、管理后台、Next.js API、中间件鉴权、Prisma + SQLite 数据层</text>
+
+  <rect x="60" y="120" width="420" height="790" class="panel" filter="url(#shadow)"/>
+  <rect x="500" y="120" width="600" height="790" class="panel" filter="url(#shadow)"/>
+  <rect x="1140" y="120" width="400" height="790" class="panel" filter="url(#shadow)"/>
+
+  <text x="270" y="160" text-anchor="middle" class="section">客户端层</text>
+  <text x="800" y="160" text-anchor="middle" class="section">应用服务层（backend）</text>
+  <text x="1340" y="160" text-anchor="middle" class="section">数据层</text>
+
+  <rect x="90" y="190" width="360" height="280" class="boxBlue"/>
+  <text x="270" y="225" text-anchor="middle" class="boxTitle">微信小程序（miniprogem）</text>
+  <text x="110" y="255" class="boxText">• 用户模式 / 兼职模式</text>
+  <text x="110" y="280" class="boxText">• 发布订单、筛选接单、订单详情</text>
+  <text x="110" y="305" class="boxText">• 会话消息、地址管理、个人中心</text>
+  <text x="110" y="330" class="boxText">• `api/request.js` 统一请求封装</text>
+  <text x="110" y="355" class="boxText">• 携带 `Authorization: Bearer &lt;token&gt;`</text>
+  <text x="110" y="380" class="boxText">• `config.baseUrl` 指向后端服务</text>
+
+  <rect x="90" y="500" width="360" height="250" class="boxGreen"/>
+  <text x="270" y="535" text-anchor="middle" class="boxTitle">管理后台 Web（/admin）</text>
+  <text x="110" y="565" class="boxText">• Next.js 管理页面</text>
+  <text x="110" y="590" class="boxText">• 订单管理（状态流转/详情）</text>
+  <text x="110" y="615" class="boxText">• 兼职者审核、评价、申诉、提现</text>
+  <text x="110" y="640" class="boxText">• `admin-client.ts` 统一调用</text>
+  <text x="110" y="665" class="boxText">• 本地存储管理员令牌</text>
+
+  <rect x="90" y="775" width="360" height="110" class="boxOrange"/>
+  <text x="270" y="810" text-anchor="middle" class="boxTitle">本地 Mock（开发可选）</text>
+  <text x="110" y="840" class="boxText">• `config.isMock=true` 时启用</text>
+  <text x="110" y="865" class="boxText">• 用于小程序本地联调与示例数据</text>
+
+  <rect x="540" y="190" width="520" height="120" class="boxPurple"/>
+  <text x="800" y="225" text-anchor="middle" class="boxTitle">API 中间件鉴权（middleware.ts）</text>
+  <text x="560" y="255" class="boxText">• 校验 JWT（排除 `/api/user/login`、`/api/admin/login`、`/api/upload`）</text>
+  <text x="560" y="280" class="boxText">• 注入请求头：`x-user-id` / `x-user-role` / `x-user-openid`</text>
+
+  <rect x="540" y="340" width="520" height="120" class="boxBlue"/>
+  <text x="800" y="375" text-anchor="middle" class="boxTitle">API 路由层（Next.js Route Handlers）</text>
+  <text x="560" y="405" class="boxText">• 统一入口：`/api/*`，按业务域拆分</text>
+  <text x="560" y="430" class="boxText">• 鉴权后进入具体业务处理逻辑</text>
+
+  <rect x="540" y="500" width="250" height="150" class="boxGreen"/>
+  <text x="665" y="535" text-anchor="middle" class="boxTitle">用户与身份域</text>
+  <text x="560" y="565" class="boxText">• `/api/user/login`</text>
+  <text x="560" y="590" class="boxText">• `/api/user/info`</text>
+  <text x="560" y="615" class="boxText">• `/api/worker/status`</text>
+
+  <rect x="810" y="500" width="250" height="150" class="boxGreen"/>
+  <text x="935" y="535" text-anchor="middle" class="boxTitle">订单与服务域</text>
+  <text x="830" y="565" class="boxText">• `/api/order`（发布/查询）</text>
+  <text x="830" y="590" class="boxText">• 公开待接单列表</text>
+  <text x="830" y="615" class="boxText">• 订单状态流转</text>
+
+  <rect x="540" y="670" width="250" height="150" class="boxGreen"/>
+  <text x="665" y="705" text-anchor="middle" class="boxTitle">消息与会话域</text>
+  <text x="560" y="735" class="boxText">• `/api/message/*`</text>
+  <text x="560" y="760" class="boxText">• 会话列表、消息发送</text>
+  <text x="560" y="785" class="boxText">• 关联订单上下文</text>
+
+  <rect x="810" y="670" width="250" height="150" class="boxGreen"/>
+  <text x="935" y="705" text-anchor="middle" class="boxTitle">平台治理域</text>
+  <text x="830" y="735" class="boxText">• `/api/admin/*`</text>
+  <text x="830" y="760" class="boxText">• 审核、售后、申诉、评价</text>
+  <text x="830" y="785" class="boxText">• 订单与兼职管理</text>
+
+  <rect x="1175" y="220" width="330" height="130" class="boxBlue"/>
+  <text x="1340" y="255" text-anchor="middle" class="boxTitle">Prisma 数据访问层</text>
+  <text x="1195" y="285" class="boxText">• `src/lib/prisma.ts`</text>
+  <text x="1195" y="310" class="boxText">• 业务模块通过 Prisma Client 读写</text>
+
+  <rect x="1175" y="380" width="330" height="150" class="boxOrange"/>
+  <text x="1340" y="415" text-anchor="middle" class="boxTitle">SQLite 数据库</text>
+  <text x="1195" y="445" class="boxText">• `prisma/schema.prisma` 定义模型</text>
+  <text x="1195" y="470" class="boxText">• `DATABASE_URL` 指定数据文件</text>
+  <text x="1195" y="495" class="boxText">• 本地开发部署简单</text>
+
+  <rect x="1175" y="560" width="330" height="280" class="boxPurple"/>
+  <text x="1340" y="595" text-anchor="middle" class="boxTitle">核心数据模型</text>
+  <text x="1195" y="625" class="boxText">• 用户与兼职：User / Worker / WorkerStats</text>
+  <text x="1195" y="650" class="boxText">• 订单：Order（服务类型与状态机）</text>
+  <text x="1195" y="675" class="boxText">• 地址：Address</text>
+  <text x="1195" y="700" class="boxText">• 消息：Conversation / Message</text>
+  <text x="1195" y="725" class="boxText">• 评价：Review</text>
+  <text x="1195" y="750" class="boxText">• 售后：AfterSale</text>
+  <text x="1195" y="775" class="boxText">• 申诉：Appeal</text>
+  <text x="1195" y="800" class="boxText">• 提现：Withdrawal / AdminAuditLog</text>
+
+  <path d="M 450 300 C 500 300, 500 250, 540 250" class="flow"/>
+  <path d="M 450 605 C 500 605, 500 270, 540 250" class="flow"/>
+  <path d="M 800 310 L 800 340" class="flow"/>
+  <path d="M 800 460 L 665 500" class="flow"/>
+  <path d="M 800 460 L 935 500" class="flow"/>
+  <path d="M 800 460 L 665 670" class="flow"/>
+  <path d="M 800 460 L 935 670" class="flow"/>
+  <path d="M 1060 400 C 1120 400, 1120 285, 1175 285" class="flow"/>
+  <path d="M 1340 350 L 1340 380" class="flow"/>
+  <path d="M 1340 530 L 1340 560" class="flow"/>
+  <path d="M 270 775 L 270 470" class="flowDashed"/>
+
+  <rect x="540" y="855" width="520" height="40" rx="10" fill="#f3f7ff" stroke="#cad8f5" stroke-width="1.2"/>
+  <line x1="565" y1="875" x2="625" y2="875" class="flow"/>
+  <text x="635" y="880" class="small">线上请求 / 业务调用</text>
+  <line x1="800" y1="875" x2="860" y2="875" class="flowDashed"/>
+  <text x="870" y="880" class="small">本地 Mock 调试链路</text>
+</svg>

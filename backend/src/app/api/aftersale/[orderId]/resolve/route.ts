@@ -6,12 +6,16 @@ function isAdmin(req: NextRequest) {
   return req.headers.get("x-user-role") === "admin";
 }
 
-export async function POST(req: NextRequest, { params }: { params: { orderId: string } }) {
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ orderId: string }> }
+) {
   const auth = requireUser(req);
   if (!auth.ok) return auth.response;
   if (!isAdmin(req)) {
     return NextResponse.json({ message: "仅管理员可操作" }, { status: 403 });
   }
+  const { orderId } = await params;
 
   const body = await req.json().catch(() => ({}));
   const { result } = body as { result?: string };
@@ -20,7 +24,7 @@ export async function POST(req: NextRequest, { params }: { params: { orderId: st
   }
 
   const afterSale = await prisma.afterSale.findUnique({
-    where: { orderId: params.orderId },
+    where: { orderId },
   });
   if (!afterSale) {
     return NextResponse.json({ message: "售后不存在" }, { status: 404 });
@@ -28,7 +32,7 @@ export async function POST(req: NextRequest, { params }: { params: { orderId: st
 
   const updated = await prisma.$transaction(async (tx) => {
     const afterSaleUpdated = await tx.afterSale.update({
-      where: { orderId: params.orderId },
+      where: { orderId },
       data: {
         status: "resolved",
         result,
@@ -36,14 +40,14 @@ export async function POST(req: NextRequest, { params }: { params: { orderId: st
     });
 
     await tx.order.update({
-      where: { id: params.orderId },
+      where: { id: orderId },
       data: { status: "waiting_confirm" },
     });
 
     await tx.adminAudit.create({
       data: {
         type: "order",
-        targetId: params.orderId,
+        targetId: orderId,
         action: "comment",
         reason: result,
       },

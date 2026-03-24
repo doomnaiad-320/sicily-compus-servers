@@ -1,4 +1,5 @@
 import request from '~/api/request';
+import { formatMonthDayTime, getTimestamp } from '~/utils/date';
 
 // 用户模式的状态tabs
 const USER_STATUS_TABS = [
@@ -85,6 +86,8 @@ Page({
     const filtered = current === 'all' ? source : (source || []).filter((o) => o.status === current);
     const displayList = (filtered || []).map((o) => ({
       ...o,
+      expectedTime: o.expectedTime ? formatMonthDayTime(o.expectedTime) : '',
+      createdAt: o.createdAt ? formatMonthDayTime(o.createdAt) : '',
       statusTag: this.statusTag(o.status),
     }));
     this.setData({ displayList });
@@ -111,7 +114,7 @@ Page({
 
   sortByTimeAsc() {
     const { list, available } = this.data;
-    const sortFn = (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    const sortFn = (a, b) => getTimestamp(a.createdAt) - getTimestamp(b.createdAt);
     this.setData({
       list: [...(list || [])].sort(sortFn),
       available: [...(available || [])].sort(sortFn),
@@ -121,7 +124,7 @@ Page({
 
   sortByTimeDesc() {
     const { list, available } = this.data;
-    const sortFn = (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    const sortFn = (a, b) => getTimestamp(b.createdAt) - getTimestamp(a.createdAt);
     this.setData({
       list: [...(list || [])].sort(sortFn),
       available: [...(available || [])].sort(sortFn),

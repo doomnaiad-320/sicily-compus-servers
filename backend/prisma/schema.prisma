@@ -187,7 +187,7 @@ model Order {
   review       Review?
   afterSale    AfterSale?
   appeals      Appeal[]       @relation("OrderAppeals")
-  conversation Conversation?  @relation("OrderConversation")
+  conversations Conversation[] @relation("OrderConversations")
 
   @@index([status])
   @@index([userId])
@@ -198,8 +198,8 @@ model Order {
 
 model Conversation {
   id        String   @id @default(cuid())
-  orderId   String?  @unique
-  order     Order?   @relation("OrderConversation", fields: [orderId], references: [id])
+  orderId   String?
+  order     Order?   @relation("OrderConversations", fields: [orderId], references: [id])
   userId    String
   workerId  String
   user      User     @relation("UserConversation", fields: [userId], references: [id])
@@ -208,6 +208,8 @@ model Conversation {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([orderId, userId, workerId])
+  @@index([orderId])
   @@index([userId, workerId])
 }
 

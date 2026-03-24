@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { AppealStatus, AfterSaleStatus, OrderStatus, PrismaClient, ServiceType, WithdrawalStatus, WorkerStatus } from "@prisma/client";
 
 const prisma = new PrismaClient();
@@ -141,6 +140,12 @@ async function main() {
     OrderStatus.pending,
     OrderStatus.pending,
     OrderStatus.pending,
+    OrderStatus.pending,
+    OrderStatus.pending,
+    OrderStatus.pending,
+    OrderStatus.pending,
+    OrderStatus.pending,
+    OrderStatus.pending,
     OrderStatus.in_progress,
     OrderStatus.in_progress,
     OrderStatus.in_progress,
@@ -199,6 +204,75 @@ async function main() {
       },
     });
     orders.push(order);
+  }
+
+  // 为部分订单创建示例私信会话，方便本地联调 IM
+  const samplePendingOrder = orders.find((o) => o.status === OrderStatus.pending && !o.workerId);
+  if (samplePendingOrder && approvedWorkers[0]) {
+    const pendingConversation = await prisma.conversation.create({
+      data: {
+        orderId: samplePendingOrder.id,
+        userId: samplePendingOrder.userId,
+        workerId: approvedWorkers[0].id,
+      },
+    });
+
+    await prisma.message.createMany({
+      data: [
+        {
+          conversationId: pendingConversation.id,
+          senderId: approvedWorkers[0].userId,
+          receiverId: samplePendingOrder.userId,
+          orderId: samplePendingOrder.id,
+          content: "你好，我可以接这个订单，想先确认一下取件地点。",
+          messageType: "text",
+        },
+        {
+          conversationId: pendingConversation.id,
+          senderId: samplePendingOrder.userId,
+          receiverId: approvedWorkers[0].userId,
+          orderId: samplePendingOrder.id,
+          content: "可以，在南区菜鸟驿站，今晚八点前都可以。",
+          messageType: "text",
+        },
+      ],
+    });
+  }
+
+  const sampleInProgressOrder = orders.find((o) => o.status === OrderStatus.in_progress && o.workerId);
+  if (sampleInProgressOrder && sampleInProgressOrder.workerId) {
+    const inProgressConversation = await prisma.conversation.create({
+      data: {
+        orderId: sampleInProgressOrder.id,
+        userId: sampleInProgressOrder.userId,
+        workerId: sampleInProgressOrder.workerId,
+      },
+    });
+
+    const workerUserId =
+      approvedWorkers.find((worker) => worker.id === sampleInProgressOrder.workerId)
+        ?.userId || sampleInProgressOrder.workerId;
+
+    await prisma.message.createMany({
+      data: [
+        {
+          conversationId: inProgressConversation.id,
+          senderId: sampleInProgressOrder.userId,
+          receiverId: workerUserId,
+          orderId: sampleInProgressOrder.id,
+          content: "麻烦到了以后和我说一声。",
+          messageType: "text",
+        },
+        {
+          conversationId: inProgressConversation.id,
+          senderId: workerUserId,
+          receiverId: sampleInProgressOrder.userId,
+          orderId: sampleInProgressOrder.id,
+          content: "好的，我已经在路上了。",
+          messageType: "text",
+        },
+      ],
+    });
   }
 
   // 创建评价

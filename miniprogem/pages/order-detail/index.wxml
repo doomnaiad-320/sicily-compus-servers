@@ -48,17 +48,27 @@
       </view>
     </view>
 
-    <!-- 联系信息卡片（非公开订单才显示） -->
-    <view class="info-card" wx:if="{{order.contactName || order.contactPhone}}">
+    <!-- 联系信息卡片 -->
+    <view class="info-card" wx:if="{{contactDisplayName || contactDisplayPhone}}">
       <view class="card-title">联系方式</view>
-      <view class="info-row" wx:if="{{order.contactName}}">
+      <view class="info-row" wx:if="{{contactDisplayName}}">
         <text class="info-icon">👤</text>
-        <text class="info-value flex-1">{{order.contactName}}</text>
+        <text class="info-value flex-1">{{contactDisplayName}}</text>
+        <t-button
+          wx:if="{{chatEntry}}"
+          size="extra-small"
+          theme="primary"
+          variant="outline"
+          class="contact-action"
+          bindtap="onChatTap"
+        >
+          {{chatEntry.text}}
+        </t-button>
       </view>
-      <view class="info-row" wx:if="{{order.contactPhone}}">
+      <view class="info-row" wx:if="{{contactDisplayPhone}}">
         <text class="info-icon">📞</text>
-        <text class="info-value flex-1">{{order.contactPhone}}</text>
-        <t-button size="extra-small" theme="primary" variant="outline" data-phone="{{order.contactPhone}}" bindtap="callPhone">拨打</t-button>
+        <text class="info-value flex-1">{{contactDisplayPhone}}</text>
+        <t-button size="extra-small" theme="primary" variant="outline" data-phone="{{contactDisplayPhone}}" bindtap="callPhone">拨打</t-button>
       </view>
     </view>
 

@@ -2,12 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/request";
 
-export async function GET(req: NextRequest, { params }: { params: { orderId: string } }) {
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ orderId: string }> }
+) {
   const auth = requireUser(req);
   if (!auth.ok) return auth.response;
+  const { orderId } = await params;
 
   const afterSale = await prisma.afterSale.findUnique({
-    where: { orderId: params.orderId },
+    where: { orderId },
     include: {
       order: true,
     },

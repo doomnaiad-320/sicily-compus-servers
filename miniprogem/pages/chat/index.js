@@ -9,15 +9,13 @@ Page({
     conversationId: '',
     orderId: '',
     userId: '', // 自己 userId
-    role: 'user',
     order: null,
-    actions: [],
     messages: [],
     input: '',
     anchor: '',
     keyboardHeight: 0,
     loading: true,
-    actionLoading: false,
+    timer: null,
   },
 
   onLoad(options) {
@@ -26,20 +24,33 @@ Page({
     this.initChat();
   },
 
+  onShow() {
+    if (this.data.conversationId) {
+      this.startPoll();
+    }
+  },
+
+  onHide() {
+    this.stopPoll();
+  },
+
+  onUnload() {
+    this.stopPoll();
+  },
+
   async initChat() {
     try {
       const user = await request('/api/user/info', 'GET');
-      const role = user.currentRole || 'user';
-      this.setData({ userId: user.id, role });
+      this.setData({ userId: user.id });
       if (!this.data.conversationId && this.data.orderId) {
-        const created = await request('/api/message', 'POST', {
+        const created = await request('/api/message/conversations', 'POST', {
           orderId: this.data.orderId,
-          content: '我发起了聊天',
         });
-        this.setData({ conversationId: created.conversationId || created.id });
+        this.setData({ conversationId: created.id });
       }
       await this.fetchMessages();
       await this.fetchOrder();
+      this.startPoll();
     } catch (e) {
       wx.showToast({ title: e?.message || '加载失败', icon: 'none' });
     } finally {
@@ -88,30 +99,15 @@ Page({
     if (!this.data.orderId) return;
     try {
       const order = await request(`/api/order/${this.data.orderId}`, 'GET');
-      this.setData({ order, actions: this.computeActions(order, this.data.role) });
+      this.setData({ order });
     } catch (e) {
       // ignore
     }
   },
 
-  computeActions(order, role) {
-    if (!order) return [];
-    const status = order.status;
-    const actions = [];
-    if (role === 'user') {
-      if (status === 'consulting') actions.push({ key: 'ready', text: '请接单' });
-      if (status === 'waiting_confirm') actions.push({ key: 'confirm', text: '确认完成' });
-    } else if (role === 'worker') {
-      if (status === 'pending') actions.push({ key: 'take', text: '接单' });
-      if (status === 'in_progress') actions.push({ key: 'complete', text: '服务完成' });
-    }
-    return actions;
-  },
-
   statusTag(status) {
     const map = {
       unpaid: { text: '待支付', theme: 'warning' },
-      consulting: { text: '待咨询', theme: 'default' },
       pending: { text: '待接单', theme: 'primary' },
       in_progress: { text: '服务中', theme: 'primary' },
       waiting_confirm: { text: '待确认', theme: 'warning' },
@@ -120,29 +116,6 @@ Page({
       appealing: { text: '申诉中', theme: 'danger' },
     };
     return map[status] || { text: status, theme: 'default' };
-  },
-
-  async onActionTap(e) {
-    const { key } = e.currentTarget.dataset;
-    if (!key || !this.data.orderId || this.data.actionLoading) return;
-    this.setData({ actionLoading: true });
-    try {
-      if (key === 'ready') {
-        await request(`/api/order/${this.data.orderId}/ready`, 'POST');
-      } else if (key === 'confirm') {
-        await request(`/api/order/${this.data.orderId}/confirm`, 'POST');
-      } else if (key === 'take') {
-        await request(`/api/order/${this.data.orderId}/take`, 'POST');
-      } else if (key === 'complete') {
-        await request(`/api/order/${this.data.orderId}/complete`, 'POST');
-      }
-      await this.fetchOrder();
-      wx.showToast({ title: '已提交', icon: 'success' });
-    } catch (err) {
-      wx.showToast({ title: err?.message || '操作失败', icon: 'none' });
-    } finally {
-      this.setData({ actionLoading: false });
-    }
   },
 
   async sendMessage() {
@@ -169,6 +142,28 @@ Page({
       wx.showToast({ title: e?.message || '发送失败', icon: 'none' });
     }
     wx.nextTick(this.scrollToBottom);
+  },
+
+  startPoll() {
+    this.stopPoll();
+    if (!this.data.conversationId) return;
+    const timer = setInterval(async () => {
+      if (!this.data.conversationId) return;
+      try {
+        await this.fetchMessages();
+        await this.fetchOrder();
+      } catch (e) {
+        // ignore polling failures
+      }
+    }, 5000);
+    this.setData({ timer });
+  },
+
+  stopPoll() {
+    if (this.data.timer) {
+      clearInterval(this.data.timer);
+      this.setData({ timer: null });
+    }
   },
 
   /** 消息列表滚动到底部 */

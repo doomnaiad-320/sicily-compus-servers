@@ -26,6 +26,48 @@ const SERVICE_TYPE_TEXT: Record<string, string> = {
   other: "其他服务",
 };
 
+type PlainOrder = Prisma.OrderGetPayload<Record<string, never>>;
+const publicOrderInclude = {
+  user: {
+    select: {
+      nickname: true,
+    },
+  },
+} satisfies Prisma.OrderInclude;
+
+const orderDetailInclude = {
+  user: {
+    select: {
+      id: true,
+      nickname: true,
+    },
+  },
+  worker: {
+    include: {
+      user: {
+        select: {
+          id: true,
+          nickname: true,
+        },
+      },
+    },
+  },
+  review: true,
+  afterSale: true,
+  appeals: true,
+} satisfies Prisma.OrderInclude;
+
+type PublicOrder = Prisma.OrderGetPayload<{
+  include: typeof publicOrderInclude;
+}>;
+type OrderWithRelations = Prisma.OrderGetPayload<{
+  include: typeof orderDetailInclude;
+}>;
+type SerializableOrder = PlainOrder &
+  Partial<
+    Pick<OrderWithRelations, "user" | "worker" | "review" | "afterSale" | "appeals">
+  >;
+
 function toDecimal(amount: number | string | undefined) {
   if (amount === undefined || amount === null) return null;
   const num = typeof amount === "string" ? Number(amount) : amount;
@@ -35,8 +77,6 @@ function toDecimal(amount: number | string | undefined) {
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const search = req.nextUrl.searchParams;
-  const isPublic = search.get("public") === "true";
 
   // 先尝试查找已支付待接单的公开订单（任何人都可以查看）
   const publicOrder = await prisma.order.findFirst({
@@ -45,10 +85,24 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       status: "pending", // 只有已支付待接单的订单才公开可见
       workerId: null,
     },
+    include: publicOrderInclude,
   });
 
   // 如果是公开可见的订单，直接返回（隐藏敏感信息）
   if (publicOrder) {
+    const auth = requireUser(req);
+    if (auth.ok && publicOrder.userId === auth.userId) {
+      const ownerOrder = await prisma.order.findUnique({
+        where: { id },
+        include: orderDetailInclude,
+      });
+
+      if (!ownerOrder) {
+        return NextResponse.json({ message: "订单不存在" }, { status: 404 });
+      }
+
+      return NextResponse.json(serializeOrder(ownerOrder));
+    }
     return NextResponse.json(serializePublicOrder(publicOrder));
   }
 
@@ -64,12 +118,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         { worker: { userId: auth.userId! } },
       ],
     },
-    include: {
-      worker: true,
-      review: true,
-      afterSale: true,
-      appeals: true,
-    },
+    include: orderDetailInclude,
   });
 
   if (!order) {
@@ -149,10 +198,13 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 }
 
 // 公开展示用的序列化（隐藏敏感联系信息）
-function serializePublicOrder(o: any) {
+function serializePublicOrder(o: PublicOrder) {
   return {
     id: o.id,
     orderNo: o.orderNo,
+    userId: o.userId,
+    userNickname: o.user.nickname,
+    workerId: o.workerId,
     serviceType: o.serviceType,
     serviceTypeText: SERVICE_TYPE_TEXT[o.serviceType] || o.serviceType,
     type: o.type,
@@ -167,12 +219,14 @@ function serializePublicOrder(o: any) {
   };
 }
 
-function serializeOrder(o: any) {
+function serializeOrder(o: SerializableOrder) {
   return {
     id: o.id,
     orderNo: o.orderNo,
     userId: o.userId,
+    userNickname: o.user?.nickname || o.contactName || null,
     workerId: o.workerId,
+    workerNickname: o.worker?.user?.nickname || null,
     serviceType: o.serviceType,
     serviceTypeText: SERVICE_TYPE_TEXT[o.serviceType] || o.serviceType,
     type: o.type,

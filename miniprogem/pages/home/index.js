@@ -1,5 +1,6 @@
 import Message from "tdesign-miniprogram/message/index";
 import request from "~/api/request";
+import { formatMonthDayTime } from "~/utils/date";
 
 // 服务类型映射
 const SERVICE_TYPE_MAP = {
@@ -122,7 +123,7 @@ Page({
         amount: order.amount,
         address: order.address || "",
         expectedTime: order.expectedTime
-          ? this.formatTime(order.expectedTime)
+          ? formatMonthDayTime(order.expectedTime)
           : "",
         status: order.status,
         createdAt: order.createdAt,
@@ -146,17 +147,6 @@ Page({
       });
     });
     return Object.values(map);
-  },
-
-  // 格式化时间
-  formatTime(timeStr) {
-    if (!timeStr) return "";
-    const date = new Date(timeStr);
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
-    const hour = date.getHours().toString().padStart(2, "0");
-    const minute = date.getMinutes().toString().padStart(2, "0");
-    return `${month}月${day}日 ${hour}:${minute}`;
   },
 
   // 筛选订单

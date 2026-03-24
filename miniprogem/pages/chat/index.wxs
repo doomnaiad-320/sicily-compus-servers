@@ -3,6 +3,12 @@ function formatNum(num) {
   return num < 10 ? '0' + num : num;
 }
 
+var WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+
+function getDayStamp(date) {
+  return Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
 /** 格式化时间 */
 function formatTime(time) {
   var t = typeof time === 'string' ? Date.parse(time) : time;
@@ -13,15 +19,13 @@ function formatTime(time) {
     D = date.getDate(),
     h = date.getHours(),
     m = date.getMinutes();
-  var Y0 = now.getFullYear(),
-    M0 = now.getMonth() + 1,
-    D0 = now.getDate();
-  if (Y === Y0) {
-    if (M === M0 && D === D0) return '今天 ' + formatNum(h) + ':' + formatNum(m);
-    if (M === M0 && D === D0 - 1) return '昨天 ' + formatNum(h) + ':' + formatNum(m);
-    return M + '月' + D + '日 ' + formatNum(h) + ':' + formatNum(m);
-  }
-  return Y + '年' + M + '月' + D + '日 ' + formatNum(h) + ':' + formatNum(m);
+  var dayDiff = Math.round((getDayStamp(date) - getDayStamp(now)) / 86400000);
+  var timeText = formatNum(h) + ':' + formatNum(m);
+  if (dayDiff === 0) return '今天 ' + timeText;
+  if (dayDiff === 1) return '明天 ' + timeText;
+  if (dayDiff === 2) return '后天 ' + timeText;
+  if (dayDiff === -1) return '昨天 ' + timeText;
+  return Y + '年' + M + '月' + D + '日' + WEEKDAYS[date.getDay()] + ' ' + timeText;
 }
 
 function isGap(list, index) {
