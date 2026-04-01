@@ -1,53 +1,79 @@
-<t-navbar title="数据中心" left-arrow />
-<view class="data-center">
-  <view class="card first">
-    <view class="card-header">
-      <view class="card-header__title"> 整体情况 </view>
-      <view class="card-header__desc"> 截止12:00累计数值 </view>
-    </view>
-    <view class="card-content">
-      <view class="card-content__item" wx:for="{{totalSituationDataList}}" wx:for-item="item" wx:key="index">
-        <view class="card-content__item--desc"> {{item.name}} </view>
-        <view class="card-content__item--count"> {{item.number}} </view>
-      </view>
-    </view>
+<t-navbar title="兼职者中心" left-arrow />
+
+<view class="worker-center">
+  <view wx:if="{{loading}}" class="state-block">
+    <t-loading theme="circular" size="48rpx" text="加载中..." />
   </view>
 
-  <view class="card second">
-    <view class="card-header">
-      <view class="card-header__title"> 互动情况 </view>
+  <view wx:elif="{{!hasWorker}}" class="state-block">
+    <t-empty icon="info-circle-filled" description="通过兼职者审核后可查看评价与数据" />
+  </view>
+
+  <view wx:else>
+    <view class="hero-card">
+      <view class="hero-title">服务评价</view>
+      <view class="hero-desc">查看用户评分、文字反馈，并在订单详情里及时回复。</view>
     </view>
-    <view class="card-content">
-      <view class="card-content__item" wx:for="{{interactionSituationDataList}}" wx:for-item="item" wx:key="*this">
-        <view class="card-content__item--desc"> {{item.name}} </view>
-        <view class="card-content__item--count">
-          <text>{{item.number}}</text>
-          <text class="unit">次</text>
+
+    <view class="stats-grid">
+      <view class="stat-card" wx:for="{{statsCards}}" wx:key="label">
+        <view class="stat-value">{{item.value}}</view>
+        <view class="stat-label">{{item.label}}</view>
+      </view>
+    </view>
+
+    <view class="panel">
+      <view class="panel-title">服务概览</view>
+      <view class="metric-list">
+        <view class="metric-item" wx:for="{{metrics}}" wx:key="label">
+          <text class="metric-label">{{item.label}}</text>
+          <text class="metric-value">{{item.value}}</text>
         </view>
       </view>
     </view>
-  </view>
 
-  <view class="card third">
-    <view class="card-header">
-      <view class="card-header__title"> 完播率 </view>
-    </view>
-    <view class="card-content">
-      <view class="card-content__item" wx:for="{{completeRateDataList}}" wx:for-item="item" wx:key="index">
-        <text class="progress__label"> {{item.time}} </text>
-        <view class="progress__content">
-          <t-progress percentage="{{item.percentage}}" />
-        </view>
+    <view class="panel">
+      <view class="panel-title">最新评价</view>
+      <view wx:if="{{reviews.length === 0}}" class="inline-empty">
+        暂时还没有收到评价
       </view>
-    </view>
-  </view>
 
-  <view class="card forth">
-    <view class="card-header">
-      <view class="card-header__title"> 按区域统计 </view>
-    </view>
-    <view class="card-content">
-      <t-empty icon="info-circle-filled" description="Empty Data" />
+      <view wx:for="{{reviews}}" wx:key="id" class="review-card">
+        <view class="review-header">
+          <view class="review-main">
+            <view class="review-order">{{item.orderLabel}}</view>
+            <view class="review-user">{{item.user.nickname || "匿名用户"}}</view>
+          </view>
+          <view class="review-score {{item.isPositive ? 'score-positive' : 'score-negative'}}">
+            {{item.rating}} 分
+          </view>
+        </view>
+
+        <view class="review-meta">
+          订单号 #{{item.order.orderNo || item.order.id}} · {{item.createdAtText}}
+        </view>
+        <view class="review-text">{{item.content || "用户未填写文字评价"}}</view>
+
+        <view class="review-reply" wx:if="{{item.replyContent}}">
+          <view class="reply-label">已回复</view>
+          <view class="reply-text">{{item.replyContent}}</view>
+          <view class="reply-time" wx:if="{{item.workerRepliedAtText}}">
+            {{item.workerRepliedAtText}}
+          </view>
+        </view>
+        <view class="review-pending" wx:else>待回复</view>
+
+        <t-button
+          block
+          size="large"
+          theme="{{item.replyContent ? 'default' : 'primary'}}"
+          variant="{{item.replyContent ? 'outline' : 'base'}}"
+          data-id="{{item.order.id}}"
+          bindtap="goOrderDetail"
+        >
+          {{item.replyContent ? "查看详情" : "去回复"}}
+        </t-button>
+      </view>
     </view>
   </view>
 </view>

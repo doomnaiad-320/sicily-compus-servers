@@ -56,6 +56,7 @@ Page({
     loading: true,
     actions: [],
     chatEntry: null,
+    contactCardTitle: "联系方式",
     contactDisplayName: "",
     contactDisplayPhone: "",
     submitting: false,
@@ -64,8 +65,12 @@ Page({
     statusTheme: "default",
     statusBgColor: "linear-gradient(135deg, #0052d9, #0066ff)",
     canDeliver: false,
+    canReplyReview: false,
+    showDeliveryContent: false,
     deliveryNoteInput: "",
     deliveryImages: [],
+    reviewReplyInput: "",
+    replyingReview: false,
   },
 
   async onLoad(query) {
@@ -75,7 +80,12 @@ Page({
       return;
     }
     this.setData({ id });
-    await this.fetchData();
+  },
+
+  onShow() {
+    if (this.data.id) {
+      this.fetchData();
+    }
   },
 
   async fetchData() {
@@ -121,16 +131,37 @@ Page({
         deliveredAt: rawOrder.deliveredAt
           ? formatMonthDayTime(rawOrder.deliveredAt)
           : "",
+        review: rawOrder.review
+          ? {
+              ...rawOrder.review,
+              createdAtText: rawOrder.review.createdAt
+                ? formatMonthDayTime(rawOrder.review.createdAt)
+                : "",
+              workerRepliedAtText: rawOrder.review.workerRepliedAt
+                ? formatMonthDayTime(rawOrder.review.workerRepliedAt)
+                : "",
+            }
+          : null,
       };
 
       // 只有pending状态（已支付待接单）的订单才是公开订单
       const isPublicOrder = order.status === "pending" && !order.workerId;
+      const isWorkerMode = role === "worker";
+      const canReplyReview =
+        !!order.review &&
+        isWorkerMode &&
+        !!order.workerId &&
+        !!workerId &&
+        order.workerId === workerId;
       const canDeliver =
-        isWorker &&
+        isWorkerMode &&
         order.workerId &&
         workerId &&
         order.workerId === workerId &&
         order.status === "in_progress";
+      const showDeliveryContent =
+        !!(order.deliveryNote || (order.deliveryImages && order.deliveryImages.length > 0)) &&
+        order.status !== "in_progress";
       const chatEntry = this.computeChatEntry(
         order,
         { role, isWorker, userId, workerId },
@@ -139,6 +170,11 @@ Page({
       const actions = this.computeActions(
         order,
         { role, isWorker, userId, workerId },
+        isPublicOrder,
+      );
+      const contactDisplay = this.computeContactDisplay(
+        order,
+        { role, userId, workerId },
         isPublicOrder,
       );
       const statusInfo = STATUS_MAP[order.status] || {
@@ -154,15 +190,19 @@ Page({
         workerId,
         actions,
         chatEntry,
-        contactDisplayName: chatEntry?.targetName || order.contactName || "",
-        contactDisplayPhone: chatEntry?.hidePhone ? "" : (order.contactPhone || ""),
+        contactCardTitle: contactDisplay.title,
+        contactDisplayName: contactDisplay.name,
+        contactDisplayPhone: contactDisplay.phone,
         loading: false,
         statusText: statusInfo.text,
         statusTheme: statusInfo.theme,
         statusBgColor: statusInfo.bgColor,
         canDeliver,
+        canReplyReview,
+        showDeliveryContent,
         deliveryNoteInput: order.deliveryNote || "",
         deliveryImages: order.deliveryImages || [],
+        reviewReplyInput: order.review?.replyContent || "",
       });
     } catch (e) {
       this.setData({ loading: false });
@@ -232,6 +272,38 @@ Page({
       }
     }
     return actions;
+  },
+
+  computeContactDisplay(order, user, isPublicOrder) {
+    if (!order) {
+      return { title: "联系方式", name: "", phone: "" };
+    }
+
+    const { role, userId, workerId } = user;
+    const isOwner = !!userId && order.userId === userId;
+    const isAssignedWorker = !!workerId && !!order.workerId && order.workerId === workerId;
+
+    if (isOwner && order.workerId) {
+      return {
+        title: "兼职者联系方式",
+        name: order.workerNickname || "接单人",
+        phone: order.workerPhone || "",
+      };
+    }
+
+    if (isAssignedWorker || (isPublicOrder && role === "worker" && !isOwner)) {
+      return {
+        title: "用户联系方式",
+        name: order.contactName || order.userNickname || "",
+        phone: order.contactPhone || "",
+      };
+    }
+
+    return {
+      title: "联系方式",
+      name: order.contactName || "",
+      phone: order.contactPhone || "",
+    };
   },
 
   async onActionTap(e) {
@@ -411,6 +483,34 @@ Page({
       wx.showToast({ title: e?.message || "交付失败", icon: "none" });
     } finally {
       this.setData({ submitting: false });
+    }
+  },
+
+  onReviewReplyInput(e) {
+    this.setData({ reviewReplyInput: e.detail.value });
+  },
+
+  async submitReviewReply() {
+    const { order, canReplyReview, reviewReplyInput, replyingReview } = this.data;
+    if (!canReplyReview || !order?.review || replyingReview) return;
+
+    const replyContent = reviewReplyInput.trim();
+    if (!replyContent) {
+      wx.showToast({ title: "请输入回复内容", icon: "none" });
+      return;
+    }
+
+    this.setData({ replyingReview: true });
+    try {
+      await request(`/api/review/${order.review.id}/reply`, "PUT", {
+        replyContent,
+      });
+      wx.showToast({ title: "回复成功", icon: "success" });
+      await this.fetchData();
+    } catch (e) {
+      wx.showToast({ title: e?.message || "回复失败", icon: "none" });
+    } finally {
+      this.setData({ replyingReview: false });
     }
   },
 });

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { adminFetch, getAdminToken } from "@/lib/admin-client";
 import { useRouter } from "next/navigation";
@@ -13,7 +14,12 @@ type OrderDetail = {
   address: string;
   user: { nickname: string; openid: string };
   worker?: { id: string; userId: string };
-  review?: { rating: number; content: string | null };
+  review?: {
+    rating: number;
+    content: string | null;
+    replyContent: string | null;
+    workerRepliedAt: string | null;
+  };
   afterSale?: { status: string; reason: string; result: string | null };
   appeals?: { id: string; status: string; reason: string; result: string | null }[];
   createdAt: string;
@@ -30,17 +36,15 @@ export default function AdminOrderDetailPage({ params }: { params: { id: string 
       router.replace("/admin");
       return;
     }
-    load();
-  }, []);
-
-  const load = async () => {
-    try {
-      const res = await adminFetch<OrderDetail>(`/api/admin/orders/${params.id}`);
-      setData(res);
-    } catch (e: any) {
-      setError(e?.message || "加载失败");
-    }
-  };
+    void (async () => {
+      try {
+        const res = await adminFetch<OrderDetail>(`/api/admin/orders/${params.id}`);
+        setData(res);
+      } catch (error) {
+        setError(error instanceof Error ? error.message : "加载失败");
+      }
+    })();
+  }, [params.id, router]);
 
   if (error) {
     return <p className="p-6 text-red-600">{error}</p>;
@@ -58,9 +62,9 @@ export default function AdminOrderDetailPage({ params }: { params: { id: string 
           <h1 className="text-2xl font-semibold text-slate-900">订单详情</h1>
           <p className="text-sm text-slate-500">订单ID：{data.id}</p>
         </div>
-        <a className="text-sm text-slate-600 hover:text-slate-900" href="/admin/orders">
+        <Link className="text-sm text-slate-600 hover:text-slate-900" href="/admin/orders">
           返回列表
-        </a>
+        </Link>
       </div>
 
       <div className="admin-card p-5 space-y-3">
@@ -80,6 +84,10 @@ export default function AdminOrderDetailPage({ params }: { params: { id: string 
           <h3 className="text-lg font-semibold mb-2">评价</h3>
           <p className="text-slate-900">评分：{data.review.rating}</p>
           <p className="text-slate-700 mt-1">内容：{data.review.content || "-"}</p>
+          <p className="text-slate-700 mt-1">回复：{data.review.replyContent || "-"}</p>
+          <p className="text-xs text-slate-500 mt-1">
+            回复时间：{data.review.workerRepliedAt || "-"}
+          </p>
         </div>
       ) : null}
 

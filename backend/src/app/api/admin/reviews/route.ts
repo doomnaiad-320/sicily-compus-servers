@@ -13,7 +13,15 @@ export async function GET(req: NextRequest) {
 
   const reviews = await prisma.review.findMany({
     orderBy: { createdAt: "desc" },
-    include: { order: true },
+    include: {
+      user: {
+        select: {
+          id: true,
+          nickname: true,
+        },
+      },
+      order: true,
+    },
   });
 
   return NextResponse.json(reviews);

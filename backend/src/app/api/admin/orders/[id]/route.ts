@@ -85,6 +85,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       ? {
           rating: order.review.rating,
           content: order.review.content,
+          replyContent: order.review.replyContent,
+          workerRepliedAt: order.review.workerRepliedAt?.toISOString() || null,
         }
       : null,
     afterSale: order.afterSale

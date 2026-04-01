@@ -7,7 +7,10 @@ type Review = {
   id: string;
   rating: number;
   content: string | null;
+  replyContent: string | null;
+  workerRepliedAt: string | null;
   createdAt: string;
+  user?: { id: string; nickname: string };
   order: { id: string; userId: string; workerId: string | null };
 };
 
@@ -28,8 +31,8 @@ export default function AdminReviewsPage() {
     try {
       const data = await adminFetch<Review[]>("/api/admin/reviews");
       setList(data);
-    } catch (e: any) {
-      setError(e?.message || "加载失败");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "加载失败");
     } finally {
       setLoading(false);
     }
@@ -40,8 +43,8 @@ export default function AdminReviewsPage() {
     try {
       await adminFetch(`/api/admin/reviews/${id}`, { method: "DELETE" });
       await load();
-    } catch (e: any) {
-      alert(e?.message || "删除失败");
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "删除失败");
     }
   };
 
@@ -63,6 +66,7 @@ export default function AdminReviewsPage() {
             <tr>
               <th className="px-4 py-3">评分</th>
               <th className="px-4 py-3">内容</th>
+              <th className="px-4 py-3">兼职者回复</th>
               <th className="px-4 py-3">订单</th>
               <th className="px-4 py-3">时间</th>
               <th className="px-4 py-3">操作</th>
@@ -74,7 +78,13 @@ export default function AdminReviewsPage() {
                 <td className="px-4 py-3">{r.rating}★</td>
                 <td className="px-4 py-3 max-w-xs text-slate-900">
                   {r.content || "-"}
-                  <div className="text-xs text-slate-500">用户 {r.order?.userId}</div>
+                  <div className="text-xs text-slate-500">
+                    用户 {r.user?.nickname || r.order?.userId}
+                  </div>
+                </td>
+                <td className="px-4 py-3 max-w-xs text-slate-700">
+                  {r.replyContent || "-"}
+                  <div className="text-xs text-slate-500">{r.workerRepliedAt || ""}</div>
                 </td>
                 <td className="px-4 py-3">{r.order?.id}</td>
                 <td className="px-4 py-3 text-xs text-slate-500">{r.createdAt}</td>

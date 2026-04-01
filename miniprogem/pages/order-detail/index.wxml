@@ -50,7 +50,7 @@
 
     <!-- 联系信息卡片 -->
     <view class="info-card" wx:if="{{contactDisplayName || contactDisplayPhone}}">
-      <view class="card-title">联系方式</view>
+      <view class="card-title">{{contactCardTitle}}</view>
       <view class="info-row" wx:if="{{contactDisplayName}}">
         <text class="info-icon">👤</text>
         <text class="info-value flex-1">{{contactDisplayName}}</text>
@@ -149,7 +149,7 @@
     <!-- 交付内容展示 -->
     <view
       class="info-card"
-      wx:if="{{order.deliveryNote || (order.deliveryImages && order.deliveryImages.length > 0)}}"
+      wx:if="{{showDeliveryContent}}"
     >
       <view class="card-title">交付内容</view>
       <view class="info-row desc-row" wx:if="{{order.deliveryNote}}">
@@ -170,6 +170,49 @@
       <view class="deliver-meta" wx:if="{{order.deliveredAt}}">
         <text>交付时间：{{order.deliveredAt}}</text>
       </view>
+    </view>
+
+    <view class="info-card" wx:if="{{order.review}}">
+      <view class="card-title">服务评价</view>
+      <view class="review-head">
+        <text class="review-rating">{{order.review.rating}} / 5 分</text>
+        <text class="review-time" wx:if="{{order.review.createdAtText}}">
+          {{order.review.createdAtText}}
+        </text>
+      </view>
+      <view class="review-content">
+        {{order.review.content || "用户未填写文字评价"}}
+      </view>
+
+      <view class="reply-block" wx:if="{{order.review.replyContent}}">
+        <view class="reply-title">兼职者回复</view>
+        <view class="reply-content">{{order.review.replyContent}}</view>
+        <view class="reply-time" wx:if="{{order.review.workerRepliedAtText}}">
+          {{order.review.workerRepliedAtText}}
+        </view>
+      </view>
+      <view class="reply-editor" wx:elif="{{canReplyReview}}">
+        <view class="reply-title">回复评价</view>
+        <textarea
+          class="delivery-textarea"
+          value="{{reviewReplyInput}}"
+          placeholder="回复用户的评价"
+          placeholder-class="placeholder"
+          maxlength="200"
+          auto-height
+          bindinput="onReviewReplyInput"
+        />
+        <t-button
+          block
+          theme="primary"
+          size="large"
+          loading="{{replyingReview}}"
+          bindtap="submitReviewReply"
+        >
+          提交回复
+        </t-button>
+      </view>
+      <view class="reply-pending" wx:else>等待兼职者回复</view>
     </view>
   </view>
 

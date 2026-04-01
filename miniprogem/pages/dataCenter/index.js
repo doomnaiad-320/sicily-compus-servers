@@ -1,110 +1,91 @@
-import request from '~/api/request';
+import request from "~/api/request";
+import { formatMonthDayTime } from "~/utils/date";
+
+function formatReviewList(list = []) {
+  return list.map((item) => ({
+    ...item,
+    orderLabel: item.order?.title || item.order?.type || "服务订单",
+    createdAtText: item.createdAt ? formatMonthDayTime(item.createdAt) : "",
+    workerRepliedAtText: item.workerRepliedAt
+      ? formatMonthDayTime(item.workerRepliedAt)
+      : "",
+  }));
+}
 
 Page({
-  /**
-   * 页面的初始数据
-   */
   data: {
-    totalSituationDataList: null,
-    totalSituationKeyList: null,
-    completeRateDataList: null,
-    complete_rate_keyList: null,
-    interactionSituationDataList: null,
-    interaction_situation_keyList: null,
-    areaDataList: null,
-    areaDataKeysList: null,
-    memberitemWidth: null,
-    smallitemWidth: null,
+    loading: true,
+    hasWorker: false,
+    statsCards: [],
+    metrics: [],
+    reviews: [],
   },
 
-  onLoad() {
+  onShow() {
     this.init();
   },
 
-  init() {
-    this.getMemberData();
-    this.getInteractionData();
-    this.getCompleteRateData();
-    this.getAreaData();
-  },
-
-  /**
-   * 获取 “整体情况” 数据
-   */
-  async getMemberData() {
-    try {
-      const stats = await request('/api/worker/stats', 'GET');
-      const totalSituationData = [
-        { title: '接单数', value: stats.acceptedCount },
-        { title: '完成数', value: stats.completedCount },
-        { title: '好评率', value: `${Math.round((stats.positiveRate || 0) * 100)}%` },
-      ];
-      this.setData({
-        totalSituationDataList: totalSituationData,
-        memberitemWidth: `${(750 - 32 * (totalSituationData.length - 1)) / totalSituationData.length}rpx`,
-      });
-    } catch (e) {
-      wx.showToast({ title: e?.message || '加载失败', icon: 'none' });
-    }
-  },
-
-  /**
-   * 获取 “互动情况” 数据
-   */
-  getInteractionData() {
-    request('/dataCenter/interaction').then((res) => {
-      const interactionSituationData = res.data.template.succ.data.list;
-      this.setData({
-        interactionSituationDataList: interactionSituationData,
-        interactionSituationKeysList: Object.keys(interactionSituationData[0]),
-      });
-
-      // 计算每个.item元素的宽度
-      const itemWidth = `${(750 - 32 * (interactionSituationData.length - 1)) / interactionSituationData.length}rpx`;
-      // 更新.item元素的样式
-      this.setData({
-        smallitemWidth: itemWidth,
-      });
+  async init() {
+    this.setData({
+      loading: true,
+      hasWorker: false,
+      statsCards: [],
+      metrics: [],
+      reviews: [],
     });
-  },
 
-  /**
-   * 完播率
-   */
-  async getCompleteRateData() {
     try {
-      const stats = await request('/api/worker/stats', 'GET');
-      const completeRateData = [
-        { name: '完成率', value: stats.acceptedCount ? `${Math.round((stats.completedCount / stats.acceptedCount) * 100)}%` : '0%' },
-        { name: '好评数', value: stats.positiveCount },
-        { name: '差评数', value: stats.negativeCount },
-      ];
+      const user = await request("/api/user/info", "GET");
+      const worker = user?.worker;
+
+      if (!worker || worker.status !== "approved") {
+        this.setData({ loading: false, hasWorker: false });
+        return;
+      }
+
+      this.setData({ hasWorker: true });
+
+      const [stats, rawReviews] = await Promise.all([
+        request("/api/worker/stats", "GET"),
+        request(`/api/review/worker/${worker.id}`, "GET"),
+      ]);
+
+      const reviews = formatReviewList(rawReviews || []);
+      const totalReviews = reviews.length;
+      const pendingReplyCount = reviews.filter((item) => !item.replyContent).length;
+      const goodRate = totalReviews
+        ? `${Math.round((reviews.filter((item) => item.isPositive).length / totalReviews) * 100)}%`
+        : "0%";
+
       this.setData({
-        completeRateDataList: completeRateData,
-        completeRateKeysList: ['name', 'value'],
-        itemHeight: `${380 / completeRateData.length}rpx`,
+        loading: false,
+        hasWorker: true,
+        statsCards: [
+          { label: "接单数", value: stats.acceptedCount || 0 },
+          { label: "完成数", value: stats.completedCount || 0 },
+          { label: "评价数", value: totalReviews },
+          { label: "待回复", value: pendingReplyCount },
+        ],
+        metrics: [
+          { label: "好评率", value: goodRate },
+          { label: "好评数", value: stats.positiveCount || 0 },
+          { label: "差评数", value: stats.negativeCount || 0 },
+          { label: "累计收入", value: `¥${stats.totalIncome || 0}` },
+          { label: "工作时长", value: `${stats.totalWorkMinutes || 0} 分钟` },
+        ],
+        reviews,
       });
     } catch (e) {
-      // ignore
+      this.setData({ loading: false });
+      wx.showToast({ title: e?.message || "加载失败", icon: "none" });
     }
   },
 
-  /**
-   * 按区域统计
-   */
-  async getAreaData() {
-    try {
-      const stats = await request('/api/worker/stats', 'GET');
-      const areaData = [
-        { name: '收入(元)', value: stats.totalIncome },
-        { name: '工作时长(分钟)', value: stats.totalWorkMinutes },
-      ];
-      this.setData({
-        areaDataList: areaData,
-        areaDataKeysList: ['name', 'value'],
-      });
-    } catch (e) {
-      // ignore
-    }
+  goOrderDetail(e) {
+    const { id } = e.currentTarget.dataset;
+    if (!id) return;
+    wx.navigateTo({
+      url: `/pages/order-detail/index?id=${id}`,
+    });
   },
 });

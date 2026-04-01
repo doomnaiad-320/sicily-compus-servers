@@ -1,6 +1,27 @@
 import request from '~/api/request';
 import useToastBehavior from '~/behaviors/useToast';
 
+const BASE_GRID_LIST = [
+  { name: '我的订单', icon: 'root-list', type: 'orders' },
+  { name: '地址管理', icon: 'location', type: 'address' },
+  { name: '申请兼职者', icon: 'edit-1', type: 'apply' },
+  { name: '我的提现', icon: 'money', type: 'withdrawal' },
+  { name: '退出登录', icon: 'poweroff', type: 'logout' },
+];
+
+function buildGridList(user) {
+  const list = [...BASE_GRID_LIST];
+  if (user?.worker?.status === 'approved') {
+    list.splice(3, 0, {
+      name: '兼职者中心',
+      icon: 'chart',
+      type: 'dataCenter',
+      url: '/pages/dataCenter/index',
+    });
+  }
+  return list;
+}
+
 Page({
   behaviors: [useToastBehavior],
 
@@ -8,13 +29,7 @@ Page({
     isLoad: false,
     personalInfo: {},
     roleSwitching: false,
-    gridList: [
-      { name: '我的订单', icon: 'root-list', type: 'orders' },
-      { name: '地址管理', icon: 'location', type: 'address' },
-      { name: '申请兼职者', icon: 'edit-1', type: 'apply' },
-      { name: '我的提现', icon: 'money', type: 'withdrawal' },
-      { name: '退出登录', icon: 'poweroff', type: 'logout' },
-    ],
+    gridList: BASE_GRID_LIST,
   },
 
   async onShow() {
@@ -24,7 +39,7 @@ Page({
   async loadUser() {
     const token = wx.getStorageSync('access_token');
     if (!token) {
-      this.setData({ isLoad: false, personalInfo: {} });
+      this.setData({ isLoad: false, personalInfo: {}, gridList: BASE_GRID_LIST });
       return;
     }
     try {
@@ -32,10 +47,11 @@ Page({
       this.setData({
         isLoad: true,
         personalInfo: user,
+        gridList: buildGridList(user),
       });
     } catch (e) {
       wx.removeStorageSync('access_token');
-      this.setData({ isLoad: false, personalInfo: {} });
+      this.setData({ isLoad: false, personalInfo: {}, gridList: BASE_GRID_LIST });
     }
   },
 

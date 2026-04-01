@@ -48,6 +48,7 @@ const orderDetailInclude = {
         select: {
           id: true,
           nickname: true,
+          phone: true,
         },
       },
     },
@@ -227,6 +228,7 @@ function serializeOrder(o: SerializableOrder) {
     userNickname: o.user?.nickname || o.contactName || null,
     workerId: o.workerId,
     workerNickname: o.worker?.user?.nickname || null,
+    workerPhone: o.worker?.user?.phone || null,
     serviceType: o.serviceType,
     serviceTypeText: SERVICE_TYPE_TEXT[o.serviceType] || o.serviceType,
     type: o.type,
@@ -243,7 +245,19 @@ function serializeOrder(o: SerializableOrder) {
     deliveryNote: o.deliveryNote,
     deliveryImages: o.deliveryImages || [],
     deliveredAt: o.deliveredAt ? o.deliveredAt.toISOString() : null,
-    review: o.review || null,
+    review: o.review
+      ? {
+          id: o.review.id,
+          rating: o.review.rating,
+          content: o.review.content,
+          isPositive: o.review.isPositive,
+          replyContent: o.review.replyContent,
+          workerRepliedAt: o.review.workerRepliedAt
+            ? o.review.workerRepliedAt.toISOString()
+            : null,
+          createdAt: o.review.createdAt ? o.review.createdAt.toISOString() : null,
+        }
+      : null,
     afterSale: o.afterSale || null,
     appeals: o.appeals || [],
     paidAt: o.paidAt ? o.paidAt.toISOString() : null,

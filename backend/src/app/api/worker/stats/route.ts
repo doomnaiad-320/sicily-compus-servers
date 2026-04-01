@@ -11,16 +11,31 @@ export async function GET(req: NextRequest) {
     include: { stats: true },
   });
 
-  if (!worker || !worker.stats) {
+  if (!worker) {
     return NextResponse.json({ message: "兼职者信息不存在" }, { status: 404 });
   }
 
-  const { acceptedCount, completedCount, positiveCount, negativeCount, totalIncome, totalWorkMinutes } =
-    worker.stats;
+  const stats = worker.stats || {
+    acceptedCount: 0,
+    completedCount: 0,
+    positiveCount: 0,
+    negativeCount: 0,
+    totalIncome: 0,
+    totalWorkMinutes: 0,
+  };
+
+  const {
+    acceptedCount,
+    completedCount,
+    positiveCount,
+    negativeCount,
+    totalIncome,
+    totalWorkMinutes,
+  } = stats;
 
   const totalReviews = positiveCount + negativeCount;
   const positiveRate =
-    totalReviews > 0 ? Math.round((positiveCount / totalReviews) * 100) / 100 : 1;
+    totalReviews > 0 ? Math.round((positiveCount / totalReviews) * 100) / 100 : 0;
 
   return NextResponse.json({
     acceptedCount,

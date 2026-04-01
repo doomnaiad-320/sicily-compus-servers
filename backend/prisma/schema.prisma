@@ -233,15 +233,17 @@ model Message {
 }
 
 model Review {
-  id        String   @id @default(cuid())
-  orderId   String   @unique
-  order     Order    @relation(fields: [orderId], references: [id])
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  rating    Int
-  content   String?
-  isPositive Boolean
-  createdAt DateTime @default(now())
+  id              String    @id @default(cuid())
+  orderId         String    @unique
+  order           Order     @relation(fields: [orderId], references: [id])
+  userId          String
+  user            User      @relation(fields: [userId], references: [id])
+  rating          Int
+  content         String?
+  isPositive      Boolean
+  replyContent    String?
+  workerRepliedAt DateTime?
+  createdAt       DateTime  @default(now())
 
   @@index([userId])
 }
