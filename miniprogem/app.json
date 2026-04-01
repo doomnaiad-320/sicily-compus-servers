@@ -63,6 +63,11 @@
       "root": "pages/orders",
       "name": "orders",
       "pages": ["index"]
+    },
+    {
+      "root": "pages/review",
+      "name": "review",
+      "pages": ["index"]
     }
   ],
   "window": {

@@ -338,7 +338,17 @@ Page({
         });
         wx.showToast({ title: "已申请售后", icon: "success" });
       } else if (key === "review") {
-        wx.navigateTo({ url: `/pages/review/index?orderId=${id}` });
+        try {
+          await new Promise((resolve, reject) => {
+            wx.navigateTo({
+              url: `/pages/review/index?orderId=${id}`,
+              success: resolve,
+              fail: reject,
+            });
+          });
+        } catch (error) {
+          wx.showToast({ title: error?.errMsg || "打开评价页失败", icon: "none" });
+        }
         this.setData({ submitting: false });
         return;
       }
