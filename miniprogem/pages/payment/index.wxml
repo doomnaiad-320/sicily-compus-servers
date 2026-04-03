@@ -1,0 +1,86 @@
+<view class="payment-page">
+  <view wx:if="{{loading}}" class="payment-loading">
+    <view class="payment-loading__spinner"></view>
+    <view class="payment-loading__text">正在加载支付信息...</view>
+  </view>
+
+  <block wx:elif="{{order}}">
+    <view class="hero-card">
+      <view class="hero-card__eyebrow">模拟收银台</view>
+      <view class="hero-card__amount">¥{{order.amount}}</view>
+      <view class="hero-card__meta">
+        <text>订单号 {{order.orderNo || order.id}}</text>
+        <text>{{order.status === 'unpaid' ? '待支付' : '已支付'}}</text>
+      </view>
+      <view class="hero-card__tip">演示环境，不会发起真实扣款。</view>
+    </view>
+
+    <view class="info-card">
+      <view class="card-title">订单信息</view>
+      <view class="info-row">
+        <text class="info-row__label">服务类型</text>
+        <text class="info-row__value">{{order.type}}</text>
+      </view>
+      <view class="info-row" wx:if="{{order.title}}">
+        <text class="info-row__label">订单标题</text>
+        <text class="info-row__value">{{order.title}}</text>
+      </view>
+      <view class="info-row">
+        <text class="info-row__label">服务地址</text>
+        <text class="info-row__value info-row__value--multiline">{{order.address}}</text>
+      </view>
+      <view class="info-row" wx:if="{{order.expectedTime}}">
+        <text class="info-row__label">期望时间</text>
+        <text class="info-row__value">{{order.expectedTime}}</text>
+      </view>
+    </view>
+
+    <view class="info-card">
+      <view class="card-title">支付方式</view>
+      <view
+        wx:for="{{paymentOptions}}"
+        wx:key="value"
+        class="channel-card {{selectedChannel === item.value ? 'channel-card--active' : ''}}"
+        data-channel="{{item.value}}"
+        bindtap="selectChannel"
+      >
+        <view class="channel-card__icon" style="background: {{item.accent}};">
+          {{item.iconText}}
+        </view>
+        <view class="channel-card__main">
+          <view class="channel-card__head">
+            <text class="channel-card__title">{{item.label}}</text>
+            <text class="channel-card__badge">{{item.badge}}</text>
+          </view>
+          <view class="channel-card__desc">{{item.desc}}</view>
+        </view>
+        <view class="channel-card__check">
+          <view class="channel-card__dot {{selectedChannel === item.value ? 'channel-card__dot--active' : ''}}"></view>
+        </view>
+      </view>
+    </view>
+
+    <view class="notice-card">
+      <view class="notice-card__title">支付说明</view>
+      <view class="notice-card__item">提交后订单会从“待支付”进入“待接单”。</view>
+      <view class="notice-card__item">当前仅做支付演示，微信和支付宝都走同一套模拟逻辑。</view>
+      <view class="notice-card__item">如果暂时不支付，订单会保留在“待支付”列表里。</view>
+    </view>
+
+    <view class="footer-space"></view>
+
+    <view class="pay-footer">
+      <view class="pay-footer__summary">
+        <view class="pay-footer__label">需支付</view>
+        <view class="pay-footer__amount">¥{{order.amount}}</view>
+      </view>
+      <view
+        class="pay-footer__primary {{submitting || order.status !== 'unpaid' ? 'pay-footer__primary--disabled' : ''}}"
+        bindtap="submitPayment"
+      >
+        {{submitting ? '支付处理中...' : (order.status === 'unpaid' ? '确认支付' : '已完成支付')}}
+      </view>
+      <view class="pay-footer__secondary" bindtap="goOrderDetail">稍后支付</view>
+    </view>
+  </block>
+</view>

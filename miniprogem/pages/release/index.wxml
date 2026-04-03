@@ -191,7 +191,7 @@
   </view>
   <view class="submit-bar__btn {{canSubmit ? '' : 'submit-bar__btn--disabled'}}" bindtap="release">
     <t-loading wx:if="{{submitting}}" theme="circular" size="36rpx" color="#fff" />
-    <text wx:else>发布订单</text>
+    <text wx:else>提交并支付</text>
   </view>
 </view>
 

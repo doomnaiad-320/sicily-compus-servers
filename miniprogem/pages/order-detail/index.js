@@ -255,6 +255,9 @@ Page({
 
     // 私有订单的操作
     if (isOwner) {
+      if (status === "unpaid") {
+        actions.push({ key: "pay", text: "立即支付", theme: "primary" });
+      }
       // 允许取消的状态: unpaid, pending
       if (status === "unpaid" || status === "pending") {
         actions.push({ key: "cancel", text: "取消订单", theme: "default" });
@@ -309,6 +312,13 @@ Page({
   async onActionTap(e) {
     const { key } = e.currentTarget.dataset;
     if (!key || this.data.submitting) return;
+
+    if (key === "pay") {
+      wx.redirectTo({
+        url: `/pages/payment/index?id=${this.data.id}`,
+      });
+      return;
+    }
 
     if (key === "take" && this.data.role !== "worker") {
       wx.showToast({ title: "请切换到兼职者模式接单", icon: "none" });

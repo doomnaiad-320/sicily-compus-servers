@@ -55,6 +55,11 @@
       "pages": ["index"]
     },
     {
+      "root": "pages/payment",
+      "name": "payment",
+      "pages": ["index"]
+    },
+    {
       "root": "pages/withdrawal",
       "name": "withdrawal",
       "pages": ["index"]

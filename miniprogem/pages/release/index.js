@@ -158,8 +158,9 @@ Page({
     this.setData({ submitting: true });
     wx.showLoading({ title: "发布中" });
 
+    let createdOrder = null;
     try {
-      const order = await request("/api/order", "POST", {
+      createdOrder = await request("/api/order", "POST", {
         serviceType,
         type,
         title,
@@ -171,17 +172,24 @@ Page({
         amount: amountNum,
       });
 
-      // 模拟支付
-      await request(`/api/order/${order.id}/pay`, "POST");
-
-      wx.showToast({ title: "发布成功", icon: "success" });
-      setTimeout(() => {
-        wx.switchTab({
-          url: "/pages/home/index",
+      await new Promise((resolve, reject) => {
+        wx.redirectTo({
+          url: `/pages/payment/index?id=${createdOrder.id}`,
+          success: resolve,
+          fail: reject,
         });
-      }, 1000);
+      });
     } catch (e) {
-      wx.showToast({ title: e?.message || "发布失败", icon: "none" });
+      if (createdOrder?.id) {
+        wx.showToast({ title: "订单已创建，请完成支付", icon: "none" });
+        setTimeout(() => {
+          wx.redirectTo({
+            url: `/pages/order-detail/index?id=${createdOrder.id}`,
+          });
+        }, 800);
+      } else {
+        wx.showToast({ title: e?.message || "发布失败", icon: "none" });
+      }
     } finally {
       wx.hideLoading();
       this.setData({ submitting: false });

@@ -10,6 +10,9 @@ export async function POST(
   if (!auth.ok) return auth.response;
 
   const { id } = await params;
+  const body = await req.json().catch(() => ({}));
+  const channel = body?.channel === "alipay" ? "alipay" : "wechat";
+  const channelText = channel === "alipay" ? "支付宝" : "微信";
 
   const order = await prisma.order.findUnique({ where: { id } });
   if (!order || order.userId !== auth.userId) {
@@ -35,6 +38,9 @@ export async function POST(
     orderNo: (updated as any).orderNo,
     status: updated.status,
     paidAt: updated.paidAt?.toISOString(),
-    message: "支付成功，订单已发布",
+    paymentChannel: channel,
+    paymentChannelText: channelText,
+    mockTradeNo: `mock_${Date.now()}`,
+    message: `${channelText}支付模拟成功，订单已发布`,
   });
 }
